@@ -6,6 +6,8 @@ import { logInfo, logError } from './utils/logger.js';
 import { applyEpic } from './commands/apply.js';
 import { validateEpic } from './commands/validate.js';
 import { runDoctor } from './commands/doctor.js';
+import { showHistory } from './commands/history.js';
+import { replayPaste } from './commands/replay.js';
 
 function showBanner() {
   const banner = `
@@ -63,6 +65,21 @@ export async function run(argv: string[]): Promise<void> {
     .description('Manage chains')
     .action(async () => {
       logInfo('RunSafe: chains invoked');
+    });
+
+  program
+    .command('history')
+    .description('Show apply history')
+    .option('--all', 'show all history')
+    .action(async (opts: any) => {
+      await showHistory(opts);
+    });
+
+  program
+    .command('replay <index>')
+    .description('Replay a previous apply')
+    .action(async (index: string) => {
+      await replayPaste(parseInt(index, 10));
     });
 
   program
