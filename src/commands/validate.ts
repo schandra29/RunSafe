@@ -2,17 +2,19 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { parseEpic, FileEdit } from '../utils/parseEpic.js';
 import { logError, logSuccess } from '../utils/logger.js';
+import { recordFailure } from '../utils/telemetry.js';
 
 interface ValidateOptions {
   council?: boolean;
 }
 
-function checkLineFormat(lines: string[], prefix: string, file: string): void {
+async function checkLineFormat(lines: string[], prefix: string, file: string): Promise<void> {
   for (const line of lines) {
     if (!line.startsWith(prefix)) {
       logError(`Invalid ${prefix.trim()} line format in ${file}`);
+      await recordFailure();
       process.exit(1);
-    }
+      }
   }
 }
 
@@ -24,14 +26,17 @@ export async function validateEpic(file: string, opts: ValidateOptions): Promise
 
   if (!md.includes('# Summary')) {
     logError('Missing # Summary section');
+    await recordFailure();
     process.exit(1);
   }
   if (!md.includes('File Edits')) {
     logError('Missing # File Edits section');
+    await recordFailure();
     process.exit(1);
   }
   if (epic.edits.length === 0) {
     logError('No file edits found');
+    await recordFailure();
     process.exit(1);
   }
 
@@ -39,6 +44,7 @@ export async function validateEpic(file: string, opts: ValidateOptions): Promise
     const absPath = path.resolve(workspace, edit.filePath);
     if (!absPath.startsWith(workspace)) {
       logError(`Path ${edit.filePath} is outside workspace`);
+      await recordFailure();
       process.exit(1);
     }
     if (
@@ -47,15 +53,17 @@ export async function validateEpic(file: string, opts: ValidateOptions): Promise
       edit.filePath.endsWith('package-lock.json')
     ) {
       logError(`Modification of protected path ${edit.filePath} not allowed`);
+      await recordFailure();
       process.exit(1);
     }
     if (!['replace', 'insert-before', 'insert-after', 'delete'].includes(edit.type)) {
       logError(`Invalid operation ${edit.type} in ${edit.filePath}`);
+      await recordFailure();
       process.exit(1);
     }
-    checkLineFormat(edit.target, '- ', edit.filePath);
+    await checkLineFormat(edit.target, '- ', edit.filePath);
     if (edit.replacement) {
-      checkLineFormat(edit.replacement, '+ ', edit.filePath);
+      await checkLineFormat(edit.replacement, '+ ', edit.filePath);
     }
   }
 
