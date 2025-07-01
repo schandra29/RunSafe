@@ -3,6 +3,7 @@ import path from 'path';
 import chalk from 'chalk';
 import { logInfo, logError, logSuccess } from '../utils/logger.js';
 import { parseEpic, FileEdit } from '../utils/parseEpic.js';
+import { writePasteLog } from '../utils/pasteLog.js';
 
 interface ApplyOptions {
   dryRun?: boolean;
@@ -68,6 +69,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
   logInfo(`Summary:\n${epic.summary}`);
 
   const fileContents = new Map<string, { original: string; updated: string }>();
+  let bytesChanged = 0;
 
   for (const edit of epic.edits) {
     const absPath = path.resolve(workspace, edit.filePath);
@@ -105,9 +107,19 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       if (options.atomic) {
         backups.set(absPath, data.original);
       }
+      bytesChanged += Math.abs(
+        Buffer.byteLength(data.updated, 'utf8') - Buffer.byteLength(data.original, 'utf8')
+      );
       await fs.writeFile(absPath, data.updated, 'utf8');
     }
     logSuccess('All changes applied');
+    await writePasteLog({
+      timestamp: new Date().toISOString(),
+      file,
+      summary: epic.summary,
+      bytesChanged,
+      atomic: !!options.atomic,
+    });
   } catch (err) {
     logError((err as Error).message);
     if (options.atomic) {
