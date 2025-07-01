@@ -112,7 +112,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       );
       await fs.writeFile(absPath, data.updated, 'utf8');
     }
-    logSuccess('All changes applied');
+    logSuccess('🌱 Your changes were safely planted.');
     await writePasteLog({
       timestamp: new Date().toISOString(),
       file,

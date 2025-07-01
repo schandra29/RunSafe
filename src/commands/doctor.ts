@@ -99,8 +99,8 @@ export async function runDoctor(): Promise<void> {
   if (!lockOk) errors = true;
 
   if (errors) {
-    logError('❌ One or more errors found.');
+    logError('🚨 Something looks off. Use runsafe doctor to investigate.');
   } else {
-    logSuccess('✅ Environment looks good!');
+    logSuccess('✅ All systems go!');
   }
 }
