@@ -92,9 +92,10 @@ export async function run(argv: string[]): Promise<void> {
 
   program
     .command('chains')
-    .description('Manage chains')
+    .description('Execute a chain of epics')
     .action(async () => {
-      logInfo('RunSafe: chains invoked');
+      const { runChains } = await import('./commands/chains.js');
+      await runChains();
     });
 
   program
