@@ -5,6 +5,7 @@ import { loadConfig } from './utils/config.js';
 import { logInfo, logError } from './utils/logger.js';
 import { applyEpic } from './commands/apply.js';
 import { validateEpic } from './commands/validate.js';
+import { runDoctor } from './commands/doctor.js';
 
 function showBanner() {
   const banner = `
@@ -47,7 +48,7 @@ export async function run(argv: string[]): Promise<void> {
     .command('doctor')
     .description('Run diagnostics')
     .action(async () => {
-      logInfo('RunSafe: doctor invoked');
+      await runDoctor();
     });
 
   program
