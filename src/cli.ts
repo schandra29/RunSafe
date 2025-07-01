@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { loadConfig } from './utils/config.js';
 import { logInfo, logError } from './utils/logger.js';
+import { applyEpic } from './commands/apply.js';
 
 function showBanner() {
   const banner = `
@@ -24,10 +25,13 @@ export async function run(argv: string[]): Promise<void> {
     .description('RunSafe CLI');
 
   program
-    .command('apply')
-    .description('Apply pending operations')
-    .action(async () => {
-      logInfo('RunSafe: apply invoked');
+    .command('apply <epic>')
+    .description('Apply file edits from epic markdown')
+    .option('--dry-run', 'show intended changes only, do not apply')
+    .option('--diff', 'display unified diffs before applying')
+    .option('--atomic', 'apply all changes as a single transaction; if any fail, rollback all')
+    .action(async (epic: string, opts: any) => {
+      await applyEpic(epic, opts);
     });
 
   program
