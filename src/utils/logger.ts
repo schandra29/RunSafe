@@ -36,3 +36,11 @@ export function logWelcome(message: string): void {
   if (quiet) return;
   console.log(chalk.magenta(message));
 }
+
+export function logCooldownWarning(): void {
+  console.log(
+    chalk.red(
+      '🧯 RunSafe is in cooldown mode.\nHigh resource usage or repeated failures detected.\nUse runsafe doctor to troubleshoot, or wait and try again.'
+    )
+  );
+}

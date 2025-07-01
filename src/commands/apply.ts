@@ -1,9 +1,17 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import chalk from 'chalk';
-import { logInfo, logError, logSuccess } from '../utils/logger.js';
+import {
+  logInfo,
+  logError,
+  logSuccess,
+  logWarn,
+  logCooldownWarning,
+} from '../utils/logger.js';
 import { parseEpic, FileEdit } from '../utils/parseEpic.js';
 import { writePasteLog } from '../utils/pasteLog.js';
+import { isInCooldown } from '../utils/cooldown.js';
+import { recordSuccess, recordFailure, getCooldownReason } from '../utils/telemetry.js';
 
 interface ApplyOptions {
   dryRun?: boolean;
@@ -61,6 +69,12 @@ function diffLines(oldStr: string, newStr: string): string {
 }
 
 export async function applyEpic(file: string, options: ApplyOptions): Promise<void> {
+  if (await isInCooldown()) {
+    logCooldownWarning();
+    const reason = await getCooldownReason();
+    if (reason) logWarn(`Reason: ${reason}`);
+    return;
+  }
   const workspace = process.cwd();
   const epicPath = path.resolve(workspace, file);
   const md = await fs.readFile(epicPath, 'utf8');
@@ -120,6 +134,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       bytesChanged,
       atomic: !!options.atomic,
     });
+    await recordSuccess();
   } catch (err) {
     logError((err as Error).message);
     if (options.atomic) {
@@ -128,5 +143,6 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       }
       logError('Rolled back changes due to failure');
     }
+    await recordFailure();
   }
 }
