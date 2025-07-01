@@ -2,31 +2,58 @@
 
 import { Command } from 'commander';
 import { loadConfig } from './utils/config.js';
-import { logInfo, logError } from './utils/logger.js';
+import { logInfo, logError, logBanner, logWelcome, setQuiet } from './utils/logger.js';
 import { applyEpic } from './commands/apply.js';
 import { validateEpic } from './commands/validate.js';
 import { runDoctor } from './commands/doctor.js';
 import { showHistory } from './commands/history.js';
 import { replayPaste } from './commands/replay.js';
+import { checkFirstRun } from './utils/firstRun.js';
+import { createRequire } from 'module';
 
 function showBanner() {
   const banner = `
  _____                 _____         __
-|  __ \               / ____|       / _|
+|  __ \\               / ____|       / _|
 | |__) |__ _ _ __ ___| (___   ___  | |_ ___  _ __
-|  _  // _` | '__/ _ \\___ \ / _ \ |  _/ _ \| '__|
-| | \ \ (_| | | |  __/____) |  __/ | || (_) | |
-|_|  \_\__,_|_|  \___|_____/ \___| |_| \___/|_|
+|  _  // _\` | '__/ _ \\___ \\ / _ \\ |  _/ _ \\| '__|
+| | \\ \\ (_| | | |  __/____) |  __/ | || (_) | |
+|_|  \\_\\__,_|_|  \\___|_____/ \\___| |_| \\___/|_|
 `;
-  logInfo(banner);
+  logBanner(banner);
+}
+
+function showWelcome() {
+  const msg = `🚀 Welcome to RunSafe – The CLI that applies AI-generated markdown, safely.\n 🔍 Try runsafe doctor to check your environment.\n 📚 See runsafe help for available commands.`;
+  logWelcome(msg);
 }
 
 export async function run(argv: string[]): Promise<void> {
   const program = new Command();
 
+  const require = createRequire(import.meta.url);
+  const { version } = require('../package.json');
+
+  const quietFlag = argv.includes('--quiet') || argv.includes('-q');
+  if (quietFlag) setQuiet(true);
+
+  const noArgs = argv.length <= 2;
+  const first = await checkFirstRun();
+  if (first && !quietFlag && !noArgs) {
+    showBanner();
+    showWelcome();
+  }
+
   program
     .name('runsafe')
-    .description('RunSafe CLI');
+    .description('RunSafe CLI')
+    .version(version)
+    .option('-q, --quiet', 'suppress banner and logs');
+
+  program.addHelpText(
+    'after',
+    '\nExamples:\n  $ runsafe apply epic-001.md --dry-run\n  $ runsafe validate epic-001.md --council\n  $ runsafe doctor'
+  );
 
   program
     .command('apply <epic>')
@@ -34,6 +61,7 @@ export async function run(argv: string[]): Promise<void> {
     .option('--dry-run', 'show intended changes only, do not apply')
     .option('--diff', 'display unified diffs before applying')
     .option('--atomic', 'apply all changes as a single transaction; if any fail, rollback all')
+    .addHelpText('after', '\nExamples:\n  $ runsafe apply epic-001.md --dry-run')
     .action(async (epic: string, opts: any) => {
       await applyEpic(epic, opts);
     });
@@ -42,6 +70,7 @@ export async function run(argv: string[]): Promise<void> {
     .command('validate <epic>')
     .description('Validate epic markdown')
     .option('--council', 'runs AI review and appends feedback to the epic file')
+    .addHelpText('after', '\nExamples:\n  $ runsafe validate epic-001.md --council')
     .action(async (epic: string, opts: any) => {
       await validateEpic(epic, opts);
     });
@@ -49,6 +78,7 @@ export async function run(argv: string[]): Promise<void> {
   program
     .command('doctor')
     .description('Run diagnostics')
+    .addHelpText('after', '\nExamples:\n  $ runsafe doctor')
     .action(async () => {
       await runDoctor();
     });
@@ -71,6 +101,7 @@ export async function run(argv: string[]): Promise<void> {
     .command('history')
     .description('Show apply history')
     .option('--all', 'show all history')
+    .addHelpText('after', '\nExamples:\n  $ runsafe history --all')
     .action(async (opts: any) => {
       await showHistory(opts);
     });
@@ -78,14 +109,15 @@ export async function run(argv: string[]): Promise<void> {
   program
     .command('replay <index>')
     .description('Replay a previous apply')
+    .addHelpText('after', '\nExamples:\n  $ runsafe replay 2')
     .action(async (index: string) => {
       await replayPaste(parseInt(index, 10));
     });
 
-  program
-    .action(() => {
-      showBanner();
-    });
+  program.action(() => {
+    showBanner();
+    program.outputHelp();
+  });
 
   try {
     await loadConfig();
