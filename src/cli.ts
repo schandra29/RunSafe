@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { loadConfig } from './utils/config.js';
 import { logInfo, logError } from './utils/logger.js';
 import { applyEpic } from './commands/apply.js';
+import { validateEpic } from './commands/validate.js';
 
 function showBanner() {
   const banner = `
@@ -35,10 +36,11 @@ export async function run(argv: string[]): Promise<void> {
     });
 
   program
-    .command('validate')
-    .description('Validate configuration')
-    .action(async () => {
-      logInfo('RunSafe: validate invoked');
+    .command('validate <epic>')
+    .description('Validate epic markdown')
+    .option('--council', 'runs AI review and appends feedback to the epic file')
+    .action(async (epic: string, opts: any) => {
+      await validateEpic(epic, opts);
     });
 
   program
