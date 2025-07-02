@@ -33,6 +33,7 @@ jest.mock('../src/utils/logger.js', () => ({
   logDryRunNotice: jest.fn(),
   logWarn: jest.fn(),
   logCooldownWarning: jest.fn(),
+  setQuiet: jest.fn(),
 }));
 
 jest.mock('../src/utils/telemetry.js', () => ({
@@ -174,4 +175,25 @@ test('suggests dry-run on failure', async () => {
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
 
   expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining('Try running with --dry-run to debug'));
+});
+
+/** Test 9 */
+test('summary mode outputs json only', async () => {
+  readFileMock.mockResolvedValueOnce('md');
+  parseEpicMock.mockReturnValueOnce(epicObj([]));
+  const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  await expect(applyEpic('e.md', { summary: true })).resolves.toBeUndefined();
+  expect(consoleSpy).toHaveBeenCalledWith(JSON.stringify({ success: true }));
+  expect(logger.logSuccessFinal).not.toHaveBeenCalled();
+  expect(logger.logInfo).not.toHaveBeenCalled();
+  consoleSpy.mockRestore();
+});
+
+/** Test 10 */
+test('silent mode suppresses logs but shows errors', async () => {
+  readFileMock.mockRejectedValueOnce(new Error('oops'));
+  await expect(applyEpic('e.md', { silent: true })).resolves.toBeUndefined();
+  expect(logger.logError).toHaveBeenCalled();
+  expect(logger.logSuccessFinal).not.toHaveBeenCalled();
+  expect(logger.logInfo).not.toHaveBeenCalled();
 });

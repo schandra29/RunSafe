@@ -8,6 +8,7 @@ import {
   logDryRunNotice,
   logWarn,
   logCooldownWarning,
+  setQuiet,
 } from '../utils/logger.js';
 import { parseEpic, FileEdit } from '../utils/parseEpic.js';
 import { printUnifiedDiff } from "../utils/printUnifiedDiff.js";
@@ -20,6 +21,8 @@ interface ApplyOptions {
   dryRun?: boolean;
   diff?: boolean;
   atomic?: boolean;
+  summary?: boolean;
+  silent?: boolean;
 }
 
 function isBinary(buf: Buffer): boolean {
@@ -68,6 +71,12 @@ function diffLines(oldStr: string, newStr: string): string {
 }
 
 export async function applyEpic(file: string, options: ApplyOptions): Promise<void> {
+  const summary = !!options.summary;
+  const silent = !!options.silent;
+  if (summary || silent) setQuiet(true);
+  let success = true;
+  let errorMsg: string | null = null;
+
   const cooldownReason = await getCooldownReason();
   await runtimeLog('applyEpic', { file, options }, cooldownReason, null);
   await logTelemetry({
@@ -76,8 +85,13 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     flags: Object.keys(options || {}),
   });
   if (await isInCooldown()) {
-    logCooldownWarning();
-    if (cooldownReason) logWarn(`Reason: ${cooldownReason}`);
+    success = false;
+    errorMsg = 'Cooldown active';
+    if (!summary && !silent) {
+      logCooldownWarning();
+      if (cooldownReason) logWarn(`Reason: ${cooldownReason}`);
+    }
+    if (summary) console.log(JSON.stringify({ success, error: errorMsg }));
     return;
   }
   const workspace = process.cwd();
@@ -86,10 +100,15 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
   try {
     md = await fs.readFile(epicPath, 'utf8');
   } catch (err) {
-    logError((err as Error).message);
-    logError('Try running with --dry-run to debug');
+    if (!summary) {
+      logError((err as Error).message);
+      logError('Try running with --dry-run to debug');
+    }
     await recordFailure();
     await runtimeLog('applyEpic', { file, options }, cooldownReason, (err as Error).message);
+    success = false;
+    errorMsg = (err as Error).message;
+    if (summary) console.log(JSON.stringify({ success, error: errorMsg }));
     return;
   }
 
@@ -99,17 +118,24 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     if (!epic) throw new Error('Invalid epic');
   } catch (err) {
     const msg = process.env.NODE_ENV === 'debug' ? (err as Error).stack : (err as Error).message;
-    try {
-      logError(msg as string);
-    } catch (logErr) {
-      console.error(logErr);
+    if (!summary) {
+      try {
+        logError(msg as string);
+      } catch (logErr) {
+        console.error(logErr);
+      }
     }
     await recordFailure();
     await runtimeLog('applyEpic', { file, options }, cooldownReason, (err as Error).message);
+    success = false;
+    errorMsg = (err as Error).message;
+    if (summary) console.log(JSON.stringify({ success, error: errorMsg }));
     return;
   }
 
-  logInfo(`Summary:\n${epic.summary}`);
+  if (!silent && !summary) {
+    logInfo(`Summary:\n${epic.summary}`);
+  }
 
   const fileContents = new Map<string, { original: string; updated: string }>();
   let bytesChanged = 0;
@@ -134,7 +160,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       existing.updated = applyEdit(existing.updated, edit);
       fileContents.set(absPath, existing);
 
-      if (options.dryRun) {
+      if (options.dryRun && !summary && !silent) {
         logInfo(`${edit.filePath} -> ${edit.type}`);
         const preview = diffLines(text, existing.updated);
         logInfo(preview);
@@ -142,7 +168,8 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     }
 
     if (options.dryRun) {
-      logDryRunNotice();
+      if (!summary && !silent) logDryRunNotice();
+      if (summary) console.log(JSON.stringify({ success: true }));
       return;
     }
 
@@ -159,7 +186,9 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       );
       await fs.writeFile(absPath, data.updated, 'utf8');
     }
-    logSuccessFinal('Your changes were safely planted.');
+    if (!summary && !silent) {
+      logSuccessFinal('Your changes were safely planted.');
+    }
     await writePasteLog({
       timestamp: new Date().toISOString(),
       file,
@@ -168,24 +197,30 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       atomic: !!options.atomic,
     });
     await recordSuccess();
+    if (summary) console.log(JSON.stringify({ success: true }));
   } catch (err) {
-    try {
-      logError((err as Error).message);
-    } catch (logErr) {
-      console.error(logErr);
+    if (!summary) {
+      try {
+        logError((err as Error).message);
+      } catch (logErr) {
+        console.error(logErr);
+      }
     }
     if (options.atomic) {
       for (const [absPath, orig] of backups.entries()) {
         await fs.writeFile(absPath, orig, 'utf8');
       }
       try {
-        logError('Rolled back changes due to failure');
+        if (!summary) logError('Rolled back changes due to failure');
       } catch (logErr) {
         console.error(logErr);
       }
     }
     await recordFailure();
     await runtimeLog('applyEpic', { file, options }, cooldownReason, (err as Error).message);
+    success = false;
+    errorMsg = (err as Error).message;
+    if (summary) console.log(JSON.stringify({ success, error: errorMsg }));
     if ((err as Error).message.startsWith('Unsupported edit type')) {
       throw err;
     }
