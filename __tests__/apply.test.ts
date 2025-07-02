@@ -6,6 +6,7 @@ import * as logger from '../src/utils/logger.js';
 import { applyEpic } from '../src/commands/apply.js';
 import * as telemetry from '../src/utils/telemetry.js';
 import { isInCooldown } from '../src/utils/cooldown.js';
+import { ErrorCodes } from '../src/constants/errorCodes.js';
 
 jest.mock('chalk', () => ({
   __esModule: true,
@@ -81,7 +82,10 @@ test('gracefully handles invalid epic', async () => {
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
 
   expect(logErrorMock).toHaveBeenCalled();
-  expect(telemetry.recordFailure).toHaveBeenCalled();
+  expect(telemetry.recordFailure).toHaveBeenCalledWith({
+    message: 'Invalid epic',
+    code: ErrorCodes.INVALID_EPIC,
+  });
   expect(writeFileMock).not.toHaveBeenCalled();
 });
 
@@ -91,8 +95,11 @@ test('logs error if readFile throws', async () => {
 
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
 
-  expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining('read fail'));
-  expect(telemetry.recordFailure).toHaveBeenCalled();
+  expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining('[E002]'));
+  expect(telemetry.recordFailure).toHaveBeenCalledWith({
+    message: 'read fail',
+    code: ErrorCodes.FILE_READ_FAIL,
+  });
 });
 
 /** Test 3 */
@@ -106,8 +113,11 @@ test('exits cleanly if write fails non-atomic', async () => {
 
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
 
-  expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining('boom'));
-  expect(telemetry.recordFailure).toHaveBeenCalled();
+  expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining('[E003]'));
+  expect(telemetry.recordFailure).toHaveBeenCalledWith({
+    message: 'boom',
+    code: ErrorCodes.WRITE_FAIL,
+  });
 });
 
 /** Test 4 */
@@ -122,9 +132,13 @@ test('atomic rollback on write failure', async () => {
 
   await expect(applyEpic('e.md', { atomic: true })).resolves.toBeUndefined();
 
-  expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining('oops'));
+  expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining('[E003]'));
   expect(logErrorMock).toHaveBeenCalledWith('Rolled back changes due to failure');
   expect(writeFileMock).toHaveBeenCalledTimes(4);
+  expect(telemetry.recordFailure).toHaveBeenCalledWith({
+    message: 'oops',
+    code: ErrorCodes.WRITE_FAIL,
+  });
 });
 
 /** Test 5 */
@@ -144,7 +158,7 @@ test('logs stack trace only in debug', async () => {
 
   process.env.NODE_ENV = 'production';
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
-  expect(logErrorMock).toHaveBeenCalledWith(err.message);
+  expect(logErrorMock).toHaveBeenCalledWith(`[${ErrorCodes.INVALID_EPIC}] ${err.message}`);
 
   jest.resetAllMocks();
   parseEpicMock.mockImplementationOnce(() => { throw err; });
@@ -152,7 +166,7 @@ test('logs stack trace only in debug', async () => {
 
   process.env.NODE_ENV = 'debug';
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
-  expect(logErrorMock).toHaveBeenCalledWith(err.stack);
+  expect(logErrorMock).toHaveBeenCalledWith(`[${ErrorCodes.INVALID_EPIC}] ${err.stack}`);
 });
 
 /** Test 7 */
