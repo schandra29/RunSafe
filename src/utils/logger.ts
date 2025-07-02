@@ -54,3 +54,46 @@ export function logDryRunNotice(): void {
   if (quiet) return;
   console.log(chalk.yellow('🚧 Dry-run mode enabled. No changes were written.'));
 }
+
+export interface LogSummaryFile {
+  filePath: string;
+  edits: { type: string; skipped?: boolean }[];
+}
+
+export interface LogSummaryOptions {
+  success: boolean;
+  files?: LogSummaryFile[];
+  cooldown?: string | null;
+  error?: string | null;
+}
+
+export function logSummary(opts: LogSummaryOptions): void {
+  const lines: string[] = [];
+
+  if (opts.cooldown) {
+    lines.push(chalk.yellow(`⚠️ ${opts.cooldown}`));
+  }
+
+  const files = opts.files ?? [];
+  for (const f of files) {
+    lines.push(`📄 ${f.filePath}`);
+    for (const e of f.edits) {
+      const color = e.skipped ? chalk.gray : chalk.green;
+      const icon = e.skipped ? '⚪' : '✅';
+      lines.push(`  ${color(`${icon} ${e.type}`)}`);
+    }
+  }
+
+  if (opts.error) {
+    lines.push(chalk.red(`❌ ${opts.error}`));
+  }
+
+  const fileCount = files.length;
+  const skipped = files.reduce((acc, f) => acc + f.edits.filter(e => e.skipped).length, 0);
+  const errorCount = opts.error ? 1 : 0;
+  lines.push(
+    `Summary: ${fileCount} files updated, ${skipped} edits skipped, ${errorCount} error${errorCount === 1 ? '' : 's'}`
+  );
+
+  console.log(lines.join('\n'));
+}

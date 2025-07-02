@@ -5,6 +5,7 @@ import {
   logError,
   logSuccessFinal,
   logCooldownWarning,
+  logSummary,
   setQuiet,
 } from '../utils/logger.js';
 import { recordFailure, recordSuccess, getCooldownReason, logTelemetry } from '../utils/telemetry.js';
@@ -41,7 +42,10 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
       logCooldownWarning();
       if (cooldownReason) logInfo(`Reason: ${cooldownReason}`);
     }
-    if (summary) console.log(JSON.stringify({ success, error: error.message, code: error.code }));
+    if (summary) {
+      const reason = cooldownReason ? `Cooldown active: ${cooldownReason}` : 'Cooldown active';
+      logSummary({ success, files: [], cooldown: reason });
+    }
     return;
   }
 
@@ -56,7 +60,7 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
     process.exitCode = 1;
     await runtimeLog('validateEpic', { epicFilePath, options }, cooldownReason, error.message, error.code);
     success = false;
-    if (summary) console.log(JSON.stringify({ success, error: error.message, code: error.code }));
+    if (summary) logSummary({ success, files: [], error: error.message });
     return;
   }
 
@@ -70,7 +74,7 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
     process.exitCode = 1;
     await runtimeLog('validateEpic', { epicFilePath, options }, cooldownReason, error.message, error.code);
     success = false;
-    if (summary) console.log(JSON.stringify({ success, error: error.message, code: error.code }));
+    if (summary) logSummary({ success, files: [], error: error.message });
     return;
   }
 
@@ -81,7 +85,7 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
     await recordFailure(error);
     process.exitCode = 1;
     success = false;
-    if (summary) console.log(JSON.stringify({ success, error: error.message, code: error.code }));
+    if (summary) logSummary({ success, files: [], error: error.message });
     return;
   }
 
@@ -98,11 +102,11 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
       await recordFailure(error);
       process.exitCode = 1;
       success = false;
-      if (summary) console.log(JSON.stringify({ success, error: error.message, code: error.code }));
+      if (summary) logSummary({ success, files: [], error: error.message });
       return;
     }
     if (!summary && !silent) logInfo('Council approved this epic.');
   }
 
-  if (summary) console.log(JSON.stringify({ success: true }));
+  if (summary) logSummary({ success: true, files: [] });
 }

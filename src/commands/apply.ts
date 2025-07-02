@@ -8,6 +8,8 @@ import {
   logDryRunNotice,
   logWarn,
   logCooldownWarning,
+  logSummary,
+  LogSummaryFile,
   setQuiet,
 } from '../utils/logger.js';
 import { parseEpic, FileEdit } from '../utils/parseEpic.js';
@@ -77,6 +79,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
   if (summary || silent) setQuiet(true);
   let success = true;
   let error: { message: string; code: ErrorCode } | null = null;
+  let summaryFiles: LogSummaryFile[] = [];
 
   const cooldownReason = await getCooldownReason();
   await runtimeLog('applyEpic', { file, options }, cooldownReason, null);
@@ -92,7 +95,10 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       logCooldownWarning();
       if (cooldownReason) logWarn(`Reason: ${cooldownReason}`);
     }
-    if (summary) console.log(JSON.stringify({ success, error: error!.message, code: error!.code }));
+    if (summary) {
+      const reason = cooldownReason ? `Cooldown active: ${cooldownReason}` : 'Cooldown active';
+      logSummary({ success, files: [], cooldown: reason });
+    }
     return;
   }
   const workspace = process.cwd();
@@ -109,7 +115,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     await recordFailure(error);
     await runtimeLog('applyEpic', { file, options }, cooldownReason, error.message, error.code);
     success = false;
-    if (summary) console.log(JSON.stringify({ success, error: error.message, code: error.code }));
+    if (summary) logSummary({ success, files: [], error: error.message });
     return;
   }
 
@@ -130,13 +136,21 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     await recordFailure(error);
     await runtimeLog('applyEpic', { file, options }, cooldownReason, error.message, error.code);
     success = false;
-    if (summary) console.log(JSON.stringify({ success, error: error.message, code: error.code }));
+    if (summary) logSummary({ success, files: [], error: error.message });
     return;
   }
 
   if (!silent && !summary) {
     logInfo(`Summary:\n${epic.summary}`);
   }
+
+  summaryFiles = Object.entries(
+    epic.edits.reduce((acc: Record<string, string[]>, e) => {
+      acc[e.filePath] = acc[e.filePath] || [];
+      acc[e.filePath].push(e.type);
+      return acc;
+    }, {})
+  ).map(([filePath, types]) => ({ filePath, edits: types.map(t => ({ type: t })) }));
 
   const fileContents = new Map<string, { original: string; updated: string }>();
   let bytesChanged = 0;
@@ -170,7 +184,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
 
     if (options.dryRun) {
       if (!summary && !silent) logDryRunNotice();
-      if (summary) console.log(JSON.stringify({ success: true }));
+      if (summary) logSummary({ success: true, files: summaryFiles });
       return;
     }
 
@@ -198,7 +212,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       atomic: !!options.atomic,
     });
     await recordSuccess();
-    if (summary) console.log(JSON.stringify({ success: true }));
+    if (summary) logSummary({ success: true, files: summaryFiles });
   } catch (err) {
     if (!summary) {
       try {
@@ -227,7 +241,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     await recordFailure(error);
     await runtimeLog('applyEpic', { file, options }, cooldownReason, error.message, error.code);
     success = false;
-    if (summary) console.log(JSON.stringify({ success, error: error.message, code: error.code }));
+    if (summary) logSummary({ success, files: summaryFiles, error: error.message });
     if ((err as Error).message.startsWith('Unsupported edit type')) {
       throw err;
     }
