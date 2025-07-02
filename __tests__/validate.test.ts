@@ -26,6 +26,7 @@ jest.mock('../src/utils/telemetry', () => ({
   recordSuccess: jest.fn(),
   recordFailure: jest.fn(),
   getCooldownReason: jest.fn(),
+  logTelemetry: jest.fn(),
 }));
 
 const readFileMock = fs.readFile as any;

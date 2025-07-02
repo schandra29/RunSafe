@@ -7,6 +7,11 @@ import { applyEpic } from '../src/commands/apply.js';
 import * as telemetry from '../src/utils/telemetry.js';
 import { isInCooldown } from '../src/utils/cooldown.js';
 
+jest.mock('chalk', () => ({
+  __esModule: true,
+  default: { red: (s: any) => s, green: (s: any) => s, cyan: (s: any) => s, yellow: (s: any) => s, blue: (s: any) => s, magenta: (s: any) => s },
+}));
+
 // Mocks
 jest.mock('fs', () => ({
   promises: {
@@ -33,6 +38,7 @@ jest.mock('../src/utils/telemetry.js', () => ({
   recordSuccess: jest.fn(),
   recordFailure: jest.fn(),
   getCooldownReason: jest.fn().mockResolvedValue(null),
+  logTelemetry: jest.fn(),
 }));
 
 jest.mock('../src/utils/cooldown.js', () => ({
