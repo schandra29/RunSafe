@@ -79,28 +79,40 @@ export function logSummary(opts: LogSummaryOptions): void {
 
   if (opts.cooldown) {
     lines.push(chalk.yellow(`⚠️ ${opts.cooldown}`));
+    lines.push('');
   }
 
   const files = opts.files ?? [];
-  for (const f of files) {
-    lines.push(`📄 ${f.filePath}`);
-    for (const e of f.edits) {
-      const color = e.skipped ? chalk.gray : chalk.green;
-      const icon = e.skipped ? '⚪' : '✅';
-      lines.push(`  ${color(`${icon} ${e.type}`)}`);
+  const modified = files.filter(f => f.edits.some(e => !e.skipped));
+  const skipped = files.filter(f => f.edits.every(e => e.skipped));
+
+  if (modified.length > 0) {
+    lines.push('📝 Modified Files');
+    for (const f of modified) {
+      lines.push(`- ${f.filePath}`);
     }
+    lines.push('');
+  }
+
+  if (skipped.length > 0) {
+    lines.push('⚠️ Skipped Edits');
+    for (const f of skipped) {
+      lines.push(`- ${f.filePath}`);
+    }
+    lines.push('');
   }
 
   if (opts.error) {
-    lines.push(chalk.red(`❌ ${opts.error}`));
+    lines.push('❌ Errors');
+    lines.push(`- ${opts.error}`);
+    lines.push('');
   }
 
-  const fileCount = files.length;
-  const skipped = files.reduce((acc, f) => acc + f.edits.filter(e => e.skipped).length, 0);
+  const appliedCount = modified.length;
+  const skippedCount = skipped.length;
   const errorCount = opts.error ? 1 : 0;
-  lines.push(
-    `Summary: ${fileCount} files updated, ${skipped} edits skipped, ${errorCount} error${errorCount === 1 ? '' : 's'}`
-  );
+
+  lines.push(`✅ ${appliedCount} applied · ⚠️ ${skippedCount} skipped · ❌ ${errorCount} error${errorCount === 1 ? '' : 's'}`);
 
   console.log(lines.join('\n'));
 }

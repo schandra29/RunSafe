@@ -115,14 +115,14 @@ describe('validateEpic', () => {
 
   it('Summary mode outputs json only', async () => {
     readFileMock.mockResolvedValueOnce(JSON.stringify(validEpic));
-    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-    await validateEpic('epic.json', { summary: true });
-    const output = logSpy.mock.calls[0][0];
-    expect(output).toContain('Summary:');
-    expect(logSuccessFinal).not.toHaveBeenCalled();
-    expect(logInfo).not.toHaveBeenCalled();
-    logSpy.mockRestore();
-  });
+  const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  await validateEpic('epic.json', { summary: true });
+  const output = logSpy.mock.calls[0][0];
+  expect(output).toContain('✅ 0 applied');
+  expect(logSuccessFinal).not.toHaveBeenCalled();
+  expect(logInfo).not.toHaveBeenCalled();
+  logSpy.mockRestore();
+});
 
   it('Silent mode suppresses logs but shows errors', async () => {
     readFileMock.mockRejectedValueOnce(new Error('nope'));

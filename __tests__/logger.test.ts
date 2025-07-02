@@ -12,20 +12,26 @@ jest.mock('chalk', () => ({
   },
 }));
 
-test('logSummary groups by file and counts outcomes', () => {
+test('logSummary lists groups and footer counts', () => {
   const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
   logSummary({
     success: true,
     files: [
-      { filePath: 'a.txt', edits: [{ type: 'replace' }, { type: 'insert-before', skipped: true }] },
-      { filePath: 'b.txt', edits: [{ type: 'delete' }] },
+      { filePath: 'a.txt', edits: [{ type: 'replace' }] },
+      { filePath: 'b.txt', edits: [{ type: 'delete', skipped: true }] },
     ],
+    error: 'oops',
   });
   expect(spy).toHaveBeenCalledTimes(1);
   const out = spy.mock.calls[0][0];
-  expect(out).toContain('📄 a.txt');
-  expect(out).toContain('✅ replace');
-  expect(out).toContain('⚪ insert-before');
-  expect(out).toContain('Summary: 2 files updated, 1 edits skipped, 0 errors');
+  expect(out).toContain('📝 Modified Files');
+  expect(out).toContain('- a.txt');
+  expect(out).toContain('⚠️ Skipped Edits');
+  expect(out).toContain('- b.txt');
+  expect(out).toContain('❌ Errors');
+  expect(out).toContain('oops');
+  expect(out).toContain('✅ 1 applied');
+  expect(out).toContain('⚠️ 1 skipped');
+  expect(out).toContain('❌ 1 error');
   spy.mockRestore();
 });
