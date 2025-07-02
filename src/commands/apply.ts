@@ -34,19 +34,15 @@ function applyEdit(content: string, edit: FileEdit): string {
   const replacement = edit.replacement?.join('\n') ?? '';
   switch (edit.type) {
     case 'replace':
-      if (!content.includes(target)) throw new Error(`target not found for replace in ${edit.filePath}`);
       return content.replace(target, replacement);
     case 'insert-before':
-      if (!content.includes(target)) throw new Error(`target not found for insert-before in ${edit.filePath}`);
       return content.replace(target, `${replacement}\n${target}`);
     case 'insert-after':
-      if (!content.includes(target)) throw new Error(`target not found for insert-after in ${edit.filePath}`);
       return content.replace(target, `${target}\n${replacement}`);
     case 'delete':
-      if (!content.includes(target)) throw new Error(`target not found for delete in ${edit.filePath}`);
       return content.replace(target, '');
     default:
-      return content;
+      throw new Error(`Unsupported edit type ${edit.type}`);
   }
 }
 
@@ -84,43 +80,68 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
   }
   const workspace = process.cwd();
   const epicPath = path.resolve(workspace, file);
-  const md = await fs.readFile(epicPath, 'utf8');
-  const epic = parseEpic(md);
+  let md: string;
+  try {
+    md = await fs.readFile(epicPath, 'utf8');
+  } catch (err) {
+    logError((err as Error).message);
+    logError('Try running with --dry-run to debug');
+    await recordFailure();
+    return;
+  }
+
+  let epic: ReturnType<typeof parseEpic> | null;
+  try {
+    epic = parseEpic(md);
+    if (!epic) throw new Error('Invalid epic');
+  } catch (err) {
+    const msg = process.env.NODE_ENV === 'debug' ? (err as Error).stack : (err as Error).message;
+    try {
+      logError(msg as string);
+    } catch (logErr) {
+      console.error(logErr);
+    }
+    await recordFailure();
+    return;
+  }
 
   logInfo(`Summary:\n${epic.summary}`);
 
   const fileContents = new Map<string, { original: string; updated: string }>();
   let bytesChanged = 0;
+  const backups: Map<string, string> = new Map();
 
-  for (const edit of epic.edits) {
-    const absPath = path.resolve(workspace, edit.filePath);
-    if (!absPath.startsWith(workspace)) {
-      throw new Error(`Path ${edit.filePath} is outside workspace`);
+  try {
+    for (const edit of epic.edits) {
+      const absPath = path.resolve(workspace, edit.filePath);
+      if (!absPath.startsWith(workspace)) {
+        throw new Error(`Path ${edit.filePath} is outside workspace`);
+      }
+      if (
+        absPath.includes(`${path.sep}node_modules${path.sep}`) ||
+        absPath.includes(`${path.sep}.git${path.sep}`)
+      ) {
+        throw new Error(`Modification of protected path ${edit.filePath} not allowed`);
+      }
+      const buf = await fs.readFile(absPath);
+      if (isBinary(buf)) throw new Error(`Binary file ${edit.filePath} not allowed`);
+      const text = buf.toString('utf8');
+      const existing = fileContents.get(absPath) || { original: text, updated: text };
+      existing.updated = applyEdit(existing.updated, edit);
+      fileContents.set(absPath, existing);
+
+      if (options.dryRun) {
+        logInfo(`${edit.filePath} -> ${edit.type}`);
+        const preview = diffLines(text, existing.updated);
+        logInfo(preview);
+      }
     }
-    if (absPath.includes(`${path.sep}node_modules${path.sep}`) || absPath.includes(`${path.sep}.git${path.sep}`)) {
-      throw new Error(`Modification of protected path ${edit.filePath} not allowed`);
-    }
-    const buf = await fs.readFile(absPath);
-    if (isBinary(buf)) throw new Error(`Binary file ${edit.filePath} not allowed`);
-    const text = buf.toString('utf8');
-    const existing = fileContents.get(absPath) || { original: text, updated: text };
-    existing.updated = applyEdit(existing.updated, edit);
-    fileContents.set(absPath, existing);
 
     if (options.dryRun) {
-      logInfo(`${edit.filePath} -> ${edit.type}`);
-      const preview = diffLines(text, existing.updated);
-      logInfo(preview);
+      logDryRunNotice();
+      return;
     }
-  }
 
-  if (options.dryRun) {
-    logDryRunNotice();
-    return;
-  }
-
-  const backups: Map<string, string> = new Map();
-  try {
     for (const [absPath, data] of fileContents.entries()) {
       if (options.diff) {
         const rel = path.relative(workspace, absPath);
@@ -144,13 +165,24 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     });
     await recordSuccess();
   } catch (err) {
-    logError((err as Error).message);
+    try {
+      logError((err as Error).message);
+    } catch (logErr) {
+      console.error(logErr);
+    }
     if (options.atomic) {
       for (const [absPath, orig] of backups.entries()) {
         await fs.writeFile(absPath, orig, 'utf8');
       }
-      logError('Rolled back changes due to failure');
+      try {
+        logError('Rolled back changes due to failure');
+      } catch (logErr) {
+        console.error(logErr);
+      }
     }
     await recordFailure();
+    if ((err as Error).message.startsWith('Unsupported edit type')) {
+      throw err;
+    }
   }
 }
