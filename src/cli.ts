@@ -61,8 +61,11 @@ export async function run(argv: string[]): Promise<void> {
     .option('--dry-run', 'show intended changes only, do not apply')
     .option('--diff', 'display unified diffs before applying')
     .option('--atomic', 'apply all changes as a single transaction; if any fail, rollback all')
+    .option('--summary', 'output json summary only')
+    .option('--silent', 'suppress all logging except errors')
     .addHelpText('after', '\nExamples:\n  $ runsafe apply epic-001.md --dry-run')
     .action(async (epic: string, opts: any) => {
+      if (opts.summary || opts.silent) setQuiet(true);
       await applyEpic(epic, opts);
     });
 
@@ -70,8 +73,11 @@ export async function run(argv: string[]): Promise<void> {
     .command('validate <epic>')
     .description('Validate epic markdown')
     .option('--council', 'runs AI review and appends feedback to the epic file')
+    .option('--summary', 'output json summary only')
+    .option('--silent', 'suppress all logging except errors')
     .addHelpText('after', '\nExamples:\n  $ runsafe validate epic-001.md --council')
     .action(async (epic: string, opts: any) => {
+      if (opts.summary || opts.silent) setQuiet(true);
       await validateEpic(epic, opts);
     });
 

@@ -20,7 +20,7 @@ export async function runtimeLog<T = unknown>(
   args: T,
   cooldownReason: string | null,
   error: string | null
-): Promise<void> {
+): Promise<RuntimeLogEntry<T>> {
   const entry: RuntimeLogEntry<T> = {
     timestamp: new Date().toISOString(),
     commandName,
@@ -37,6 +37,7 @@ export async function runtimeLog<T = unknown>(
     }
     // fail silently in production
   }
+  return entry;
 }
 
 export async function getRecentRuns(): Promise<RuntimeLogEntry[]> {

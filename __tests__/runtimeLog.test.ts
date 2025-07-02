@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 
 test('logs structured entry', async () => {
-  await runtimeLog('applyEpic', { foo: 'bar' }, null, null);
+  const result = await runtimeLog('applyEpic', { foo: 'bar' }, null, null);
   const dir = getUadoDir();
   const file = path.join(dir, 'runtime.json');
   expect(mkdirMock).toHaveBeenCalledWith(dir, { recursive: true });
@@ -30,6 +30,7 @@ test('logs structured entry', async () => {
   expect(entry.cooldownReason).toBeNull();
   expect(entry.error).toBeNull();
   expect(typeof entry.timestamp).toBe('string');
+  expect(result).toEqual(entry);
 });
 
 test('includes cooldown and error', async () => {
@@ -38,4 +39,10 @@ test('includes cooldown and error', async () => {
   expect(entry.cooldownReason).toBe('cool');
   expect(entry.error).toBe('boom');
   expect(entry.commandName).toBe('validateEpic');
+});
+
+test('returns structured entry', async () => {
+  const result = await runtimeLog('applyEpic', { foo: 'bar' }, null, null);
+  const appended = JSON.parse(appendFileMock.mock.calls[0][1].trim());
+  expect(result).toEqual(appended);
 });

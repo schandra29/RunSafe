@@ -15,6 +15,7 @@ jest.mock('../src/utils/logger', () => ({
   logError: jest.fn(),
   logSuccessFinal: jest.fn(),
   logCooldownWarning: jest.fn(),
+  setQuiet: jest.fn(),
 }));
 jest.mock('../src/utils/cooldown', () => ({ isInCooldown: jest.fn() }));
 jest.mock('../src/utils/multiAgentReview', () => ({
@@ -102,5 +103,23 @@ describe('validateEpic', () => {
     readFileMock.mockResolvedValueOnce('not json');
     await validateEpic('bad.json', {});
     expect(logError).toHaveBeenCalledWith('Invalid JSON format');
+  });
+
+  it('Summary mode outputs json only', async () => {
+    readFileMock.mockResolvedValueOnce(JSON.stringify(validEpic));
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    await validateEpic('epic.json', { summary: true });
+    expect(logSpy).toHaveBeenCalledWith(JSON.stringify({ success: true }));
+    expect(logSuccessFinal).not.toHaveBeenCalled();
+    expect(logInfo).not.toHaveBeenCalled();
+    logSpy.mockRestore();
+  });
+
+  it('Silent mode suppresses logs but shows errors', async () => {
+    readFileMock.mockRejectedValueOnce(new Error('nope'));
+    await validateEpic('missing.json', { silent: true });
+    expect(logError).toHaveBeenCalledWith('Epic file not found');
+    expect(logSuccessFinal).not.toHaveBeenCalled();
+    expect(logInfo).not.toHaveBeenCalled();
   });
 });
