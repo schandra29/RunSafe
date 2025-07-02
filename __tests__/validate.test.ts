@@ -6,6 +6,7 @@ import { logInfo, logError, logSuccessFinal, logCooldownWarning } from '../src/u
 import { multiAgentReview, CouncilVerdict } from '../src/utils/multiAgentReview';
 import { validateSchema } from '../src/utils/validateSchema';
 import { recordSuccess, recordFailure, getCooldownReason } from '../src/utils/telemetry';
+import { ErrorCodes } from '../src/constants/errorCodes.js';
 
 jest.mock('chalk', () => ({__esModule: true, default: {red:(s:any)=>s, green:(s:any)=>s, cyan:(s:any)=>s, yellow:(s:any)=>s, blue:(s:any)=>s, magenta:(s:any)=>s}}));
 
@@ -55,8 +56,11 @@ describe('validateEpic', () => {
     ((validateSchema as any)).mockReturnValueOnce({ valid: false, errors: ['bad'] });
     process.exitCode = 0;
     await validateEpic('epic.json', {});
-    expect(logError).toHaveBeenCalledWith('Epic schema validation failed');
-    expect(recordFailure).toHaveBeenCalled();
+    expect(logError).toHaveBeenCalledWith(`[${ErrorCodes.INVALID_EPIC}] Epic schema validation failed`);
+    expect(recordFailure).toHaveBeenCalledWith({
+      message: 'Epic schema validation failed',
+      code: ErrorCodes.INVALID_EPIC,
+    });
     expect(process.exitCode).toBe(1);
   });
 
@@ -81,7 +85,7 @@ describe('validateEpic', () => {
     ((multiAgentReview as any)).mockResolvedValue(CouncilVerdict.REJECTED);
     process.exitCode = 0;
     await validateEpic('epic.json', { council: true });
-    expect(logError).toHaveBeenCalledWith('Council rejected this epic.');
+    expect(logError).toHaveBeenCalledWith(`[${ErrorCodes.VALIDATION_REJECTED}] Council rejected this epic.`);
     expect(process.exitCode).toBe(1);
   });
 
@@ -96,13 +100,13 @@ describe('validateEpic', () => {
   it('Gracefully handles missing file or invalid JSON', async () => {
     readFileMock.mockRejectedValueOnce(new Error('nope'));
     await validateEpic('missing.json', {});
-    expect(logError).toHaveBeenCalledWith('Epic file not found');
+    expect(logError).toHaveBeenCalledWith(`[${ErrorCodes.FILE_READ_FAIL}] Epic file not found`);
 
     jest.resetAllMocks();
     ((isInCooldown as any)).mockResolvedValue(false);
     readFileMock.mockResolvedValueOnce('not json');
     await validateEpic('bad.json', {});
-    expect(logError).toHaveBeenCalledWith('Invalid JSON format');
+    expect(logError).toHaveBeenCalledWith(`[${ErrorCodes.INVALID_EPIC}] Invalid JSON format`);
   });
 
   it('Summary mode outputs json only', async () => {
@@ -118,7 +122,7 @@ describe('validateEpic', () => {
   it('Silent mode suppresses logs but shows errors', async () => {
     readFileMock.mockRejectedValueOnce(new Error('nope'));
     await validateEpic('missing.json', { silent: true });
-    expect(logError).toHaveBeenCalledWith('Epic file not found');
+    expect(logError).toHaveBeenCalledWith(`[${ErrorCodes.FILE_READ_FAIL}] Epic file not found`);
     expect(logSuccessFinal).not.toHaveBeenCalled();
     expect(logInfo).not.toHaveBeenCalled();
   });

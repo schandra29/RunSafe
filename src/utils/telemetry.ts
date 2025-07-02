@@ -68,7 +68,7 @@ async function checkConditions(state: TelemetryState): Promise<void> {
   }
 }
 
-export async function recordFailure(): Promise<void> {
+export async function recordFailure(_error?: { message: string; code: string }): Promise<void> {
   const state = await readState();
   state.consecutiveFailures += 1;
   state.lastRun = new Date().toISOString();

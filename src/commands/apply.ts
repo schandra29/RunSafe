@@ -16,6 +16,7 @@ import { writePasteLog } from '../utils/pasteLog.js';
 import { isInCooldown } from '../utils/cooldown.js';
 import { recordSuccess, recordFailure, getCooldownReason, logTelemetry } from '../utils/telemetry.js';
 import { runtimeLog } from '../utils/runtimeLog.js';
+import { ErrorCodes, ErrorCode } from '../constants/errorCodes.js';
 
 interface ApplyOptions {
   dryRun?: boolean;
@@ -75,7 +76,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
   const silent = !!options.silent;
   if (summary || silent) setQuiet(true);
   let success = true;
-  let errorMsg: string | null = null;
+  let error: { message: string; code: ErrorCode } | null = null;
 
   const cooldownReason = await getCooldownReason();
   await runtimeLog('applyEpic', { file, options }, cooldownReason, null);
@@ -86,12 +87,12 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
   });
   if (await isInCooldown()) {
     success = false;
-    errorMsg = 'Cooldown active';
+    error = { message: 'Cooldown active', code: ErrorCodes.COOLDOWN_ACTIVE };
     if (!summary && !silent) {
       logCooldownWarning();
       if (cooldownReason) logWarn(`Reason: ${cooldownReason}`);
     }
-    if (summary) console.log(JSON.stringify({ success, error: errorMsg }));
+    if (summary) console.log(JSON.stringify({ success, error: error!.message, code: error!.code }));
     return;
   }
   const workspace = process.cwd();
@@ -101,14 +102,14 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     md = await fs.readFile(epicPath, 'utf8');
   } catch (err) {
     if (!summary) {
-      logError((err as Error).message);
+      logError(`[${ErrorCodes.FILE_READ_FAIL}] ${(err as Error).message}`);
       logError('Try running with --dry-run to debug');
     }
-    await recordFailure();
-    await runtimeLog('applyEpic', { file, options }, cooldownReason, (err as Error).message);
+    error = { message: (err as Error).message, code: ErrorCodes.FILE_READ_FAIL };
+    await recordFailure(error);
+    await runtimeLog('applyEpic', { file, options }, cooldownReason, error.message, error.code);
     success = false;
-    errorMsg = (err as Error).message;
-    if (summary) console.log(JSON.stringify({ success, error: errorMsg }));
+    if (summary) console.log(JSON.stringify({ success, error: error.message, code: error.code }));
     return;
   }
 
@@ -120,16 +121,16 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     const msg = process.env.NODE_ENV === 'debug' ? (err as Error).stack : (err as Error).message;
     if (!summary) {
       try {
-        logError(msg as string);
+        logError(`[${ErrorCodes.INVALID_EPIC}] ${msg as string}`);
       } catch (logErr) {
         console.error(logErr);
       }
     }
-    await recordFailure();
-    await runtimeLog('applyEpic', { file, options }, cooldownReason, (err as Error).message);
+    error = { message: (err as Error).message, code: ErrorCodes.INVALID_EPIC };
+    await recordFailure(error);
+    await runtimeLog('applyEpic', { file, options }, cooldownReason, error.message, error.code);
     success = false;
-    errorMsg = (err as Error).message;
-    if (summary) console.log(JSON.stringify({ success, error: errorMsg }));
+    if (summary) console.log(JSON.stringify({ success, error: error.message, code: error.code }));
     return;
   }
 
@@ -201,7 +202,10 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
   } catch (err) {
     if (!summary) {
       try {
-        logError((err as Error).message);
+        const code = (err as Error).message.startsWith('Unsupported edit type')
+          ? ErrorCodes.UNSUPPORTED_EDIT
+          : ErrorCodes.WRITE_FAIL;
+        logError(`[${code}] ${(err as Error).message}`);
       } catch (logErr) {
         console.error(logErr);
       }
@@ -216,11 +220,14 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
         console.error(logErr);
       }
     }
-    await recordFailure();
-    await runtimeLog('applyEpic', { file, options }, cooldownReason, (err as Error).message);
+    const code = (err as Error).message.startsWith('Unsupported edit type')
+      ? ErrorCodes.UNSUPPORTED_EDIT
+      : ErrorCodes.WRITE_FAIL;
+    error = { message: (err as Error).message, code };
+    await recordFailure(error);
+    await runtimeLog('applyEpic', { file, options }, cooldownReason, error.message, error.code);
     success = false;
-    errorMsg = (err as Error).message;
-    if (summary) console.log(JSON.stringify({ success, error: errorMsg }));
+    if (summary) console.log(JSON.stringify({ success, error: error.message, code: error.code }));
     if ((err as Error).message.startsWith('Unsupported edit type')) {
       throw err;
     }

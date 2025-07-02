@@ -10,6 +10,7 @@ export interface RuntimeLogEntry<T = unknown> {
   args: T;
   cooldownReason: string | null;
   error: string | null;
+  errorCode?: string;
 }
 
 const DIR = getUadoDir();
@@ -19,7 +20,8 @@ export async function runtimeLog<T = unknown>(
   commandName: CommandName,
   args: T,
   cooldownReason: string | null,
-  error: string | null
+  error: string | null,
+  errorCode?: string
 ): Promise<RuntimeLogEntry<T>> {
   const entry: RuntimeLogEntry<T> = {
     timestamp: new Date().toISOString(),
@@ -27,6 +29,7 @@ export async function runtimeLog<T = unknown>(
     args,
     cooldownReason,
     error,
+    errorCode,
   };
   try {
     await fs.mkdir(DIR, { recursive: true });

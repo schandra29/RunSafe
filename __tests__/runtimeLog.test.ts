@@ -29,15 +29,17 @@ test('logs structured entry', async () => {
   expect(entry.args).toEqual({ foo: 'bar' });
   expect(entry.cooldownReason).toBeNull();
   expect(entry.error).toBeNull();
+  expect(entry.errorCode).toBeUndefined();
   expect(typeof entry.timestamp).toBe('string');
   expect(result).toEqual(entry);
 });
 
 test('includes cooldown and error', async () => {
-  await runtimeLog('validateEpic', { id: 1 }, 'cool', 'boom');
+  await runtimeLog('validateEpic', { id: 1 }, 'cool', 'boom', 'E002');
   const entry = JSON.parse(appendFileMock.mock.calls[0][1].trim());
   expect(entry.cooldownReason).toBe('cool');
   expect(entry.error).toBe('boom');
+  expect(entry.errorCode).toBe('E002');
   expect(entry.commandName).toBe('validateEpic');
 });
 
