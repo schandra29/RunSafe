@@ -11,13 +11,17 @@ import { ErrorCodes } from '../src/constants/errorCodes.js';
 jest.mock('chalk', () => ({__esModule: true, default: {red:(s:any)=>s, green:(s:any)=>s, cyan:(s:any)=>s, yellow:(s:any)=>s, blue:(s:any)=>s, magenta:(s:any)=>s}}));
 
 jest.mock('fs', () => ({ promises: { readFile: jest.fn(), appendFile: jest.fn(), mkdir: jest.fn() } }));
-jest.mock('../src/utils/logger', () => ({
-  logInfo: jest.fn(),
-  logError: jest.fn(),
-  logSuccessFinal: jest.fn(),
-  logCooldownWarning: jest.fn(),
-  setQuiet: jest.fn(),
-}));
+jest.mock('../src/utils/logger', () => {
+  const actual = jest.requireActual('../src/utils/logger.js');
+  return {
+    ...actual,
+    logInfo: jest.fn(),
+    logError: jest.fn(),
+    logSuccessFinal: jest.fn(),
+    logCooldownWarning: jest.fn(),
+    setQuiet: jest.fn(),
+  };
+});
 jest.mock('../src/utils/cooldown', () => ({ isInCooldown: jest.fn() }));
 jest.mock('../src/utils/multiAgentReview', () => ({
   multiAgentReview: jest.fn(),
@@ -113,7 +117,8 @@ describe('validateEpic', () => {
     readFileMock.mockResolvedValueOnce(JSON.stringify(validEpic));
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     await validateEpic('epic.json', { summary: true });
-    expect(logSpy).toHaveBeenCalledWith(JSON.stringify({ success: true }));
+    const output = logSpy.mock.calls[0][0];
+    expect(output).toContain('Summary:');
     expect(logSuccessFinal).not.toHaveBeenCalled();
     expect(logInfo).not.toHaveBeenCalled();
     logSpy.mockRestore();

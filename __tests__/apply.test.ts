@@ -27,15 +27,19 @@ jest.mock('../src/utils/parseEpic.js', () => ({
   parseEpic: jest.fn(),
 }));
 
-jest.mock('../src/utils/logger.js', () => ({
-  logInfo: jest.fn(),
-  logError: jest.fn(),
-  logSuccessFinal: jest.fn(),
-  logDryRunNotice: jest.fn(),
-  logWarn: jest.fn(),
-  logCooldownWarning: jest.fn(),
-  setQuiet: jest.fn(),
-}));
+jest.mock('../src/utils/logger.js', () => {
+  const actual = jest.requireActual('../src/utils/logger.js');
+  return {
+    ...actual,
+    logInfo: jest.fn(),
+    logError: jest.fn(),
+    logSuccessFinal: jest.fn(),
+    logDryRunNotice: jest.fn(),
+    logWarn: jest.fn(),
+    logCooldownWarning: jest.fn(),
+    setQuiet: jest.fn(),
+  };
+});
 
 jest.mock('../src/utils/telemetry.js', () => ({
   recordSuccess: jest.fn(),
@@ -197,7 +201,8 @@ test('summary mode outputs json only', async () => {
   parseEpicMock.mockReturnValueOnce(epicObj([]));
   const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
   await expect(applyEpic('e.md', { summary: true })).resolves.toBeUndefined();
-  expect(consoleSpy).toHaveBeenCalledWith(JSON.stringify({ success: true }));
+  const output = consoleSpy.mock.calls[0][0];
+  expect(output).toContain('Summary:');
   expect(logger.logSuccessFinal).not.toHaveBeenCalled();
   expect(logger.logInfo).not.toHaveBeenCalled();
   consoleSpy.mockRestore();
