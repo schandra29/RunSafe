@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`handles addition-only diffs 1`] = `
+"- before/file.txt
++ after/file.txt
+
+  a
++ b
+  c"
+`;
+
+exports[`handles changes and reorderings 1`] = `
+"- before/file.txt
++ after/file.txt
+
++ c
+  a
+  b
+- c"
+`;
+
+exports[`handles removal-only diffs 1`] = `
+"- before/file.txt
++ after/file.txt
+
+  a
+- b
+  c"
+`;
+
+exports[`outputs a valid unified diff when strings differ 1`] = `
+"- before/file.txt
++ after/file.txt
+
+  a
+- line2
++ line3"
+`;

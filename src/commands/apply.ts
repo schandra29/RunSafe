@@ -10,6 +10,7 @@ import {
   logCooldownWarning,
 } from '../utils/logger.js';
 import { parseEpic, FileEdit } from '../utils/parseEpic.js';
+import { printUnifiedDiff } from "../utils/printUnifiedDiff.js";
 import { writePasteLog } from '../utils/pasteLog.js';
 import { isInCooldown } from '../utils/cooldown.js';
 import { recordSuccess, recordFailure, getCooldownReason } from '../utils/telemetry.js';
@@ -117,8 +118,8 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
   try {
     for (const [absPath, data] of fileContents.entries()) {
       if (options.diff) {
-        const d = diffLines(data.original, data.updated);
-        logInfo(`Diff for ${absPath}:\n${d}`);
+        const rel = path.relative(workspace, absPath);
+        printUnifiedDiff(data.original, data.updated, rel);
       }
       if (options.atomic) {
         backups.set(absPath, data.original);
