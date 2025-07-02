@@ -4,7 +4,8 @@ import chalk from 'chalk';
 import {
   logInfo,
   logError,
-  logSuccess,
+  logSuccessFinal,
+  logDryRunNotice,
   logWarn,
   logCooldownWarning,
 } from '../utils/logger.js';
@@ -108,6 +109,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
   }
 
   if (options.dryRun) {
+    logDryRunNotice();
     return;
   }
 
@@ -126,7 +128,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       );
       await fs.writeFile(absPath, data.updated, 'utf8');
     }
-    logSuccess('🌱 Your changes were safely planted.');
+    logSuccessFinal('Your changes were safely planted.');
     await writePasteLog({
       timestamp: new Date().toISOString(),
       file,
