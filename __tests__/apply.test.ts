@@ -202,7 +202,7 @@ test('summary mode outputs json only', async () => {
   const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
   await expect(applyEpic('e.md', { summary: true })).resolves.toBeUndefined();
   const output = consoleSpy.mock.calls[0][0];
-  expect(output).toContain('Summary:');
+  expect(output).toContain('✅ 0 applied');
   expect(logger.logSuccessFinal).not.toHaveBeenCalled();
   expect(logger.logInfo).not.toHaveBeenCalled();
   consoleSpy.mockRestore();

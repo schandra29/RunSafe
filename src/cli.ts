@@ -2,7 +2,13 @@
 
 import { Command } from 'commander';
 import { loadConfig } from './utils/config.js';
-import { logInfo, logError, logBanner, logWelcome, setQuiet } from './utils/logger.js';
+import {
+  logInfo,
+  logError,
+  logBanner,
+  logWelcome,
+  setQuiet,
+} from './utils/logger.js';
 import { applyEpic } from './commands/apply.js';
 import { validateEpic } from './commands/validate.js';
 import { runDoctor } from './commands/doctor.js';
@@ -28,6 +34,10 @@ function showWelcome() {
   logWelcome(msg);
 }
 
+function showIntro() {
+  logBanner('🛡️  RunSafe CLI v0.1  —  Secure AI Dev, One Command at a Time');
+}
+
 export async function run(argv: string[]): Promise<void> {
   const program = new Command();
 
@@ -36,6 +46,10 @@ export async function run(argv: string[]): Promise<void> {
 
   const quietFlag = argv.includes('--quiet') || argv.includes('-q');
   if (quietFlag) setQuiet(true);
+
+  if (!quietFlag) {
+    showIntro();
+  }
 
   const noArgs = argv.length <= 2;
   const first = await checkFirstRun();
@@ -52,7 +66,7 @@ export async function run(argv: string[]): Promise<void> {
 
   program.addHelpText(
     'after',
-    '\nExamples:\n  $ runsafe apply epic-001.md --dry-run\n  $ runsafe validate epic-001.md --council\n  $ runsafe uado doctor'
+    `\nRunSafe Commands:\n  apply <epic>     Apply file edits from epic markdown\n  validate <epic>  Validate epic markdown\n  uado doctor      Show recent run health summary\n\nFlags:\n  --summary  output json summary only\n  --silent   suppress all logging except errors\n  --json     output structured json\n  -q, --quiet suppress banner and logs\n\nExamples:\n  $ runsafe apply epic-001.md --dry-run\n  $ runsafe validate epic-001.md --council\n  $ runsafe uado doctor\n\n🔧 Tip: Use --json for machine-readable output`
   );
 
   program
