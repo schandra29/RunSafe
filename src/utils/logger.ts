@@ -47,7 +47,7 @@ export function logCooldownWarning(): void {
   if (json) return;
   console.log(
     chalk.red(
-      '🧯 RunSafe is in cooldown mode.\nHigh resource usage or repeated failures detected.\nUse runsafe doctor to troubleshoot, or wait and try again.'
+      '🧊 Cooldown Active\nYou\u2019ve hit a safety cooldown. Wait a few seconds and try again.'
     )
   );
 }

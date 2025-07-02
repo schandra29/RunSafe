@@ -86,6 +86,7 @@ test('gracefully handles invalid epic', async () => {
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
 
   expect(logErrorMock).toHaveBeenCalled();
+  expect(logErrorMock.mock.calls[0][0]).toMatch(/^❌/);
   expect(telemetry.recordFailure).toHaveBeenCalledWith({
     message: 'Invalid epic',
     code: ErrorCodes.INVALID_EPIC,
@@ -100,6 +101,7 @@ test('logs error if readFile throws', async () => {
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
 
   expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining('[E002]'));
+  expect(logErrorMock.mock.calls[0][0]).toMatch(/^❌/);
   expect(telemetry.recordFailure).toHaveBeenCalledWith({
     message: 'read fail',
     code: ErrorCodes.FILE_READ_FAIL,
@@ -118,6 +120,7 @@ test('exits cleanly if write fails non-atomic', async () => {
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
 
   expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining('[E003]'));
+  expect(logErrorMock.mock.calls[0][0]).toMatch(/^❌/);
   expect(telemetry.recordFailure).toHaveBeenCalledWith({
     message: 'boom',
     code: ErrorCodes.WRITE_FAIL,
@@ -137,7 +140,8 @@ test('atomic rollback on write failure', async () => {
   await expect(applyEpic('e.md', { atomic: true })).resolves.toBeUndefined();
 
   expect(logErrorMock).toHaveBeenCalledWith(expect.stringContaining('[E003]'));
-  expect(logErrorMock).toHaveBeenCalledWith('Rolled back changes due to failure');
+  expect(logErrorMock).toHaveBeenCalledWith('❌ Rolled back changes due to failure');
+  expect(logErrorMock.mock.calls[0][0]).toMatch(/^❌/);
   expect(writeFileMock).toHaveBeenCalledTimes(4);
   expect(telemetry.recordFailure).toHaveBeenCalledWith({
     message: 'oops',
@@ -162,7 +166,7 @@ test('logs stack trace only in debug', async () => {
 
   process.env.NODE_ENV = 'production';
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
-  expect(logErrorMock).toHaveBeenCalledWith(`[${ErrorCodes.INVALID_EPIC}] ${err.message}`);
+  expect(logErrorMock).toHaveBeenCalledWith(`❌ [${ErrorCodes.INVALID_EPIC}] ${err.message}`);
 
   jest.resetAllMocks();
   parseEpicMock.mockImplementationOnce(() => { throw err; });
@@ -170,7 +174,7 @@ test('logs stack trace only in debug', async () => {
 
   process.env.NODE_ENV = 'debug';
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
-  expect(logErrorMock).toHaveBeenCalledWith(`[${ErrorCodes.INVALID_EPIC}] ${err.stack}`);
+  expect(logErrorMock).toHaveBeenCalledWith(`❌ [${ErrorCodes.INVALID_EPIC}] ${err.stack}`);
 });
 
 /** Test 7 */
@@ -249,6 +253,20 @@ test('json mode indicates cooldown', async () => {
   await applyEpic('e.md', { json: true });
   const obj = JSON.parse(spy.mock.calls[0][0]);
   expect(obj.cooldown).toBe(true);
+  spy.mockRestore();
+});
+
+/** New Test */
+test('shows cooldown warning message', async () => {
+  (isInCooldown as jest.Mock).mockResolvedValueOnce(true);
+  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  (logger.logCooldownWarning as jest.Mock).mockImplementation(() => {
+    console.log('🧊 Cooldown Active\nYou\u2019ve hit a safety cooldown. Wait a few seconds and try again.');
+  });
+  await applyEpic('e.md', {});
+  expect(spy).toHaveBeenCalledWith(
+    '🧊 Cooldown Active\nYou\u2019ve hit a safety cooldown. Wait a few seconds and try again.'
+  );
   spy.mockRestore();
 });
 
