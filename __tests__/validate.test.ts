@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "bun:test";
 import { validateEpic } from '../src/commands/validate';
 import { promises as fs } from 'fs';
 import { isInCooldown } from '../src/utils/cooldown';
@@ -8,44 +8,44 @@ import { validateSchema } from '../src/utils/validateSchema';
 import { recordSuccess, recordFailure, getCooldownReason } from '../src/utils/telemetry';
 import { ErrorCodes } from '../src/constants/errorCodes.ts';
 
-jest.mock('chalk', () => ({__esModule: true, default: {red:(s:any)=>s, green:(s:any)=>s, cyan:(s:any)=>s, yellow:(s:any)=>s, blue:(s:any)=>s, magenta:(s:any)=>s}}));
+vi.mock('chalk', () => ({__esModule: true, default: {red:(s:any)=>s, green:(s:any)=>s, cyan:(s:any)=>s, yellow:(s:any)=>s, blue:(s:any)=>s, magenta:(s:any)=>s}}));
 
-jest.mock('fs', () => ({ promises: { readFile: jest.fn(), appendFile: jest.fn(), mkdir: jest.fn() } }));
-jest.mock('../src/utils/logger', () => {
-  const actual = jest.requireActual('../src/utils/logger.ts');
+vi.mock('fs', () => ({ promises: { readFile: vi.fn(), appendFile: vi.fn(), mkdir: vi.fn() } }));
+vi.mock('../src/utils/logger', () => {
+  const actual = vi.requireActual('../src/utils/logger.ts');
   return {
     ...actual,
-    logInfo: jest.fn(),
-    logError: jest.fn(),
-    logSuccessFinal: jest.fn(),
-    logCooldownWarning: jest.fn(),
-    setQuiet: jest.fn(),
+    logInfo: vi.fn(),
+    logError: vi.fn(),
+    logSuccessFinal: vi.fn(),
+    logCooldownWarning: vi.fn(),
+    setQuiet: vi.fn(),
   };
 });
-jest.mock('../src/utils/cooldown', () => ({ isInCooldown: jest.fn() }));
-jest.mock('../src/utils/multiAgentReview', () => ({
-  multiAgentReview: jest.fn(),
+vi.mock('../src/utils/cooldown', () => ({ isInCooldown: vi.fn() }));
+vi.mock('../src/utils/multiAgentReview', () => ({
+  multiAgentReview: vi.fn(),
   CouncilVerdict: { APPROVED: 'APPROVED', REJECTED: 'REJECTED' },
 }));
-jest.mock('../src/utils/validateSchema', () => ({ validateSchema: jest.fn() }));
-jest.mock('../src/utils/telemetry', () => ({
-  recordSuccess: jest.fn(),
-  recordFailure: jest.fn(),
-  getCooldownReason: jest.fn(),
-  logTelemetry: jest.fn(),
+vi.mock('../src/utils/validateSchema', () => ({ validateSchema: vi.fn() }));
+vi.mock('../src/utils/telemetry', () => ({
+  recordSuccess: vi.fn(),
+  recordFailure: vi.fn(),
+  getCooldownReason: vi.fn(),
+  logTelemetry: vi.fn(),
 }));
 
 const readFileMock = fs.readFile as any;
 
 beforeEach(() => {
-  jest.resetAllMocks();
+  vi.resetAllMocks();
   ((isInCooldown as any)).mockResolvedValue(false);
   ((getCooldownReason as any)).mockResolvedValue('Test');
   ((validateSchema as any)).mockReturnValue({ valid: true });
   readFileMock.mockResolvedValue('{}');
   // mock process.exit so tests don't exit
   // @ts-ignore
-  process.exit = jest.fn();
+  process.exit = vi.fn();
 });
 
 describe('validateEpic', () => {
@@ -73,9 +73,9 @@ describe('validateEpic', () => {
 
   it('Cooldown active: should abort and print cooldown warning', async () => {
     ((isInCooldown as any)).mockResolvedValueOnce(true);
-    const real = jest.requireActual('../src/utils/logger.ts');
-    (logCooldownWarning as jest.Mock).mockImplementation(real.logCooldownWarning);
-    const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const real = vi.requireActual('../src/utils/logger.ts');
+    (logCooldownWarning as vi.Mock).mockImplementation(real.logCooldownWarning);
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await validateEpic('epic.json', {});
     expect(spy.mock.calls[0][0]).toContain('🧊 Cooldown Active');
     expect(spy.mock.calls[0][0]).toContain('safety cooldown');
@@ -116,7 +116,7 @@ describe('validateEpic', () => {
     expect(logError).toHaveBeenCalledWith('💡 Tip: Check the file path and ensure the epic file exists.');
     expect(process.exit).toHaveBeenCalledWith(1);
 
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     ((isInCooldown as any)).mockResolvedValue(false);
     readFileMock.mockResolvedValueOnce('not json');
     await validateEpic('bad.json', {});
@@ -127,7 +127,7 @@ describe('validateEpic', () => {
 
   it('Summary mode outputs json only', async () => {
     readFileMock.mockResolvedValueOnce(JSON.stringify(validEpic));
-  const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   await validateEpic('epic.json', { summary: true });
   const output = logSpy.mock.calls[0][0];
   expect(output).toContain('✅ 0 applied');
@@ -146,7 +146,7 @@ describe('validateEpic', () => {
 
   it('JSON mode outputs structured success', async () => {
     readFileMock.mockResolvedValueOnce(JSON.stringify(validEpic));
-    const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await validateEpic('epic.json', { json: true });
     const obj = JSON.parse(spy.mock.calls[0][0]);
     expect(obj.command).toBe('validateEpic');
@@ -156,7 +156,7 @@ describe('validateEpic', () => {
 
   it('JSON mode shows errors', async () => {
     readFileMock.mockRejectedValueOnce(new Error('nope'));
-    const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await validateEpic('missing.json', { json: true });
     const obj = JSON.parse(spy.mock.calls[0][0]);
     expect(obj.success).toBe(false);
@@ -166,7 +166,7 @@ describe('validateEpic', () => {
 
   it('JSON mode indicates cooldown', async () => {
     ((isInCooldown as any)).mockResolvedValueOnce(true);
-    const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await validateEpic('epic.json', { json: true });
     const obj = JSON.parse(spy.mock.calls[0][0]);
     expect(obj.cooldown).toBe(true);

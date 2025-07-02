@@ -1,7 +1,7 @@
-import { jest } from '@jest/globals';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "bun:test";
 import { logSummary } from '../src/utils/logger.ts';
 
-jest.mock('chalk', () => ({
+vi.mock('chalk', () => ({
   __esModule: true,
   default: {
     yellow: (s: any) => s,
@@ -12,8 +12,8 @@ jest.mock('chalk', () => ({
   },
 }));
 
-test('logSummary lists groups and footer counts', () => {
-  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+it('logSummary lists groups and footer counts', () => {
+  const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
   logSummary({
     success: true,
     files: [

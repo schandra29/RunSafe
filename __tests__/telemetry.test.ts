@@ -1,10 +1,10 @@
-import { jest } from '@jest/globals';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "bun:test";
 import path from 'path';
 import { promises as fs } from 'fs';
 import { logTelemetry } from '../src/utils/telemetry.ts';
 import { getUadoDir } from '../src/utils/getUadoDir.ts';
 
-jest.mock('chalk', () => ({
+vi.mock('chalk', () => ({
   __esModule: true,
   default: {
     red: (s: any) => s,
@@ -16,21 +16,21 @@ jest.mock('chalk', () => ({
   },
 }));
 
-jest.mock('fs', () => ({
+vi.mock('fs', () => ({
   promises: {
-    appendFile: jest.fn(),
-    mkdir: jest.fn(),
+    appendFile: vi.fn(),
+    mkdir: vi.fn(),
   },
 }));
 
-const mkdirMock = fs.mkdir as unknown as jest.Mock;
-const appendFileMock = fs.appendFile as unknown as jest.Mock;
+const mkdirMock = fs.mkdir as unknown as vi.Mock;
+const appendFileMock = fs.appendFile as unknown as vi.Mock;
 
 beforeEach(() => {
-  jest.resetAllMocks();
+  vi.resetAllMocks();
 });
 
-test('logs a valid entry with command and timestamp', async () => {
+it('logs a valid entry with command and timestamp', async () => {
   const entry = { command: 'apply', timestamp: 123, flags: ['--dry-run'] };
   await expect(logTelemetry(entry)).resolves.toBeUndefined();
 
@@ -40,7 +40,7 @@ test('logs a valid entry with command and timestamp', async () => {
   expect(appendFileMock).toHaveBeenCalledWith(file, JSON.stringify(entry) + '\n', 'utf8');
 });
 
-test('creates .uado directory and file if missing', async () => {
+it('creates .uado directory and file if missing', async () => {
   const entry = { command: 'validate', timestamp: 456 };
   await logTelemetry(entry);
 
@@ -50,7 +50,7 @@ test('creates .uado directory and file if missing', async () => {
   expect(appendFileMock).toHaveBeenCalledWith(file, JSON.stringify(entry) + '\n', 'utf8');
 });
 
-test('appends multiple entries', async () => {
+it('appends multiple entries', async () => {
   const e1 = { command: 'one', timestamp: 1 };
   const e2 = { command: 'two', timestamp: 2 };
   await logTelemetry(e1);
@@ -63,7 +63,7 @@ test('appends multiple entries', async () => {
   expect(appendFileMock).toHaveBeenNthCalledWith(2, file, JSON.stringify(e2) + '\n', 'utf8');
 });
 
-test('silently handles appendFile failure', async () => {
+it('silently handles appendFile failure', async () => {
   appendFileMock.mockRejectedValueOnce(new Error('fail'));
   const entry = { command: 'oops', timestamp: 3 };
   await expect(logTelemetry(entry)).resolves.toBeUndefined();

@@ -1,14 +1,14 @@
-import { jest } from '@jest/globals';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "bun:test";
 import { multiAgentReview } from '../src/ai/multiAgentReview.ts';
 import * as agentModule from '../src/ai/agentReview.ts';
 
 describe('multiAgentReview', () => {
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
-  test('returns APPROVED when all agents vote positive', async () => {
-    jest
+  it('returns APPROVED when all agents vote positive', async () => {
+    vi
       .spyOn(agentModule, 'callAgentReview')
       .mockResolvedValue({ vote: 'APPROVED', note: 'great' });
 
@@ -23,8 +23,8 @@ describe('multiAgentReview', () => {
     expect(result.notes).toEqual(['great', 'great', 'great', 'great']);
   });
 
-  test('returns REJECTED when majority vote negative', async () => {
-    const mock = jest.spyOn(agentModule, 'callAgentReview');
+  it('returns REJECTED when majority vote negative', async () => {
+    const mock = vi.spyOn(agentModule, 'callAgentReview');
     mock
       .mockResolvedValueOnce({ vote: 'REJECTED', note: 'bad' })
       .mockResolvedValueOnce({ vote: 'REJECTED', note: 'bad' })
@@ -35,8 +35,8 @@ describe('multiAgentReview', () => {
     expect(result.decision).toBe('REJECTED');
   });
 
-  test('returns REJECTED when votes are split evenly', async () => {
-    const mock = jest.spyOn(agentModule, 'callAgentReview');
+  it('returns REJECTED when votes are split evenly', async () => {
+    const mock = vi.spyOn(agentModule, 'callAgentReview');
     mock
       .mockResolvedValueOnce({ vote: 'APPROVED', note: 'ok' })
       .mockResolvedValueOnce({ vote: 'REJECTED', note: 'bad' })
@@ -47,8 +47,8 @@ describe('multiAgentReview', () => {
     expect(result.decision).toBe('REJECTED');
   });
 
-  test('captures notes from all agents', async () => {
-    const mock = jest.spyOn(agentModule, 'callAgentReview');
+  it('captures notes from all agents', async () => {
+    const mock = vi.spyOn(agentModule, 'callAgentReview');
     mock
       .mockResolvedValueOnce({ vote: 'APPROVED', note: 'a' })
       .mockResolvedValueOnce({ vote: 'APPROVED', note: 'b' })
@@ -59,8 +59,8 @@ describe('multiAgentReview', () => {
     expect(result.notes).toEqual(['a', 'b', 'c', 'd']);
   });
 
-  test('deterministic mode returns consistent results', async () => {
-    jest
+  it('deterministic mode returns consistent results', async () => {
+    vi
       .spyOn(agentModule, 'callAgentReview')
       .mockResolvedValue({ vote: 'APPROVED', note: 'yes' });
 
@@ -69,15 +69,15 @@ describe('multiAgentReview', () => {
     expect(first).toEqual(second);
   });
 
-  test('handles malformed epic input gracefully', async () => {
+  it('handles malformed epic input gracefully', async () => {
     const result = await multiAgentReview('');
     expect(result.decision).toBe('REJECTED');
     expect(result.agentVotes).toEqual([]);
     expect(result.notes[0]).toMatch(/malformed/i);
   });
 
-  test('handles all agents abstaining', async () => {
-    jest
+  it('handles all agents abstaining', async () => {
+    vi
       .spyOn(agentModule, 'callAgentReview')
       .mockResolvedValue({ vote: undefined, note: '' });
 
