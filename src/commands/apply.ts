@@ -14,6 +14,7 @@ import { printUnifiedDiff } from "../utils/printUnifiedDiff.js";
 import { writePasteLog } from '../utils/pasteLog.js';
 import { isInCooldown } from '../utils/cooldown.js';
 import { recordSuccess, recordFailure, getCooldownReason, logTelemetry } from '../utils/telemetry.js';
+import { runtimeLog } from '../utils/runtimeLog.js';
 
 interface ApplyOptions {
   dryRun?: boolean;
@@ -67,6 +68,8 @@ function diffLines(oldStr: string, newStr: string): string {
 }
 
 export async function applyEpic(file: string, options: ApplyOptions): Promise<void> {
+  const cooldownReason = await getCooldownReason();
+  await runtimeLog('applyEpic', { file, options }, cooldownReason, null);
   await logTelemetry({
     command: 'applyEpic',
     timestamp: Date.now(),
@@ -74,8 +77,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
   });
   if (await isInCooldown()) {
     logCooldownWarning();
-    const reason = await getCooldownReason();
-    if (reason) logWarn(`Reason: ${reason}`);
+    if (cooldownReason) logWarn(`Reason: ${cooldownReason}`);
     return;
   }
   const workspace = process.cwd();
@@ -87,6 +89,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     logError((err as Error).message);
     logError('Try running with --dry-run to debug');
     await recordFailure();
+    await runtimeLog('applyEpic', { file, options }, cooldownReason, (err as Error).message);
     return;
   }
 
@@ -102,6 +105,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       console.error(logErr);
     }
     await recordFailure();
+    await runtimeLog('applyEpic', { file, options }, cooldownReason, (err as Error).message);
     return;
   }
 
@@ -181,6 +185,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       }
     }
     await recordFailure();
+    await runtimeLog('applyEpic', { file, options }, cooldownReason, (err as Error).message);
     if ((err as Error).message.startsWith('Unsupported edit type')) {
       throw err;
     }

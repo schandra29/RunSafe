@@ -18,6 +18,7 @@ jest.mock('fs', () => ({
     readFile: jest.fn(),
     writeFile: jest.fn(),
     mkdir: jest.fn(),
+    appendFile: jest.fn(),
   },
 }));
 
