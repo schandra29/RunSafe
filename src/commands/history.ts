@@ -1,5 +1,5 @@
-import { logInfo } from '../utils/logger.js';
-import { readPasteLog, PasteLogEntry } from '../utils/pasteLog.js';
+import { logInfo } from '../utils/logger.ts';
+import { readPasteLog, PasteLogEntry } from '../utils/pasteLog.ts';
 
 interface HistoryOptions {
   all?: boolean;

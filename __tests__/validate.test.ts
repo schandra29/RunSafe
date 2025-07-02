@@ -6,13 +6,13 @@ import { logInfo, logError, logSuccessFinal, logCooldownWarning } from '../src/u
 import { multiAgentReview, CouncilVerdict } from '../src/utils/multiAgentReview';
 import { validateSchema } from '../src/utils/validateSchema';
 import { recordSuccess, recordFailure, getCooldownReason } from '../src/utils/telemetry';
-import { ErrorCodes } from '../src/constants/errorCodes.js';
+import { ErrorCodes } from '../src/constants/errorCodes.ts';
 
 jest.mock('chalk', () => ({__esModule: true, default: {red:(s:any)=>s, green:(s:any)=>s, cyan:(s:any)=>s, yellow:(s:any)=>s, blue:(s:any)=>s, magenta:(s:any)=>s}}));
 
 jest.mock('fs', () => ({ promises: { readFile: jest.fn(), appendFile: jest.fn(), mkdir: jest.fn() } }));
 jest.mock('../src/utils/logger', () => {
-  const actual = jest.requireActual('../src/utils/logger.js');
+  const actual = jest.requireActual('../src/utils/logger.ts');
   return {
     ...actual,
     logInfo: jest.fn(),
@@ -73,7 +73,7 @@ describe('validateEpic', () => {
 
   it('Cooldown active: should abort and print cooldown warning', async () => {
     ((isInCooldown as any)).mockResolvedValueOnce(true);
-    const real = jest.requireActual('../src/utils/logger.js');
+    const real = jest.requireActual('../src/utils/logger.ts');
     (logCooldownWarning as jest.Mock).mockImplementation(real.logCooldownWarning);
     const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
     await validateEpic('epic.json', {});

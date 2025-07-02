@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
 import path from 'path';
 import { promises as fs } from 'fs';
-import { logTelemetry } from '../src/utils/telemetry.js';
-import { getUadoDir } from '../src/utils/getUadoDir.js';
+import { logTelemetry } from '../src/utils/telemetry.ts';
+import { getUadoDir } from '../src/utils/getUadoDir.ts';
 
 jest.mock('chalk', () => ({
   __esModule: true,

@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { logWarn, logError, logSuccess } from './logger.js';
+import { logWarn, logError, logSuccess } from './logger.ts';
 
 export interface PasteLogEntry {
   timestamp: string;

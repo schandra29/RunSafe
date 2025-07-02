@@ -1,4 +1,4 @@
-import { getTelemetry, resetCooldown } from './telemetry.js';
+import { getTelemetry, resetCooldown } from './telemetry.ts';
 
 const IDLE_LIMIT = 10 * 60 * 1000; // 10 minutes
 
@@ -13,4 +13,4 @@ export async function isInCooldown(): Promise<boolean> {
   return true;
 }
 
-export { resetCooldown } from './telemetry.js';
+export { resetCooldown } from './telemetry.ts';

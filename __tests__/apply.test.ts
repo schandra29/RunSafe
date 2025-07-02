@@ -1,12 +1,12 @@
 import { jest } from '@jest/globals';
 import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
-import { parseEpic } from '../src/utils/parseEpic.js';
-import * as logger from '../src/utils/logger.js';
-import { applyEpic } from '../src/commands/apply.js';
-import * as telemetry from '../src/utils/telemetry.js';
-import { isInCooldown } from '../src/utils/cooldown.js';
-import { ErrorCodes } from '../src/constants/errorCodes.js';
+import { parseEpic } from '../src/utils/parseEpic.ts';
+import * as logger from '../src/utils/logger.ts';
+import { applyEpic } from '../src/commands/apply.ts';
+import * as telemetry from '../src/utils/telemetry.ts';
+import { isInCooldown } from '../src/utils/cooldown.ts';
+import { ErrorCodes } from '../src/constants/errorCodes.ts';
 
 jest.mock('chalk', () => ({
   __esModule: true,
@@ -23,12 +23,12 @@ jest.mock('fs', () => ({
   },
 }));
 
-jest.mock('../src/utils/parseEpic.js', () => ({
+jest.mock('../src/utils/parseEpic.ts', () => ({
   parseEpic: jest.fn(),
 }));
 
-jest.mock('../src/utils/logger.js', () => {
-  const actual = jest.requireActual('../src/utils/logger.js');
+jest.mock('../src/utils/logger.ts', () => {
+  const actual = jest.requireActual('../src/utils/logger.ts');
   return {
     ...actual,
     logInfo: jest.fn(),
@@ -41,18 +41,18 @@ jest.mock('../src/utils/logger.js', () => {
   };
 });
 
-jest.mock('../src/utils/telemetry.js', () => ({
+jest.mock('../src/utils/telemetry.ts', () => ({
   recordSuccess: jest.fn(),
   recordFailure: jest.fn(),
   getCooldownReason: jest.fn().mockResolvedValue(null),
   logTelemetry: jest.fn(),
 }));
 
-jest.mock('../src/utils/cooldown.js', () => ({
+jest.mock('../src/utils/cooldown.ts', () => ({
   isInCooldown: jest.fn().mockResolvedValue(false),
 }));
 
-jest.mock('../src/utils/pasteLog.js', () => ({
+jest.mock('../src/utils/pasteLog.ts', () => ({
   writePasteLog: jest.fn(),
 }));
 

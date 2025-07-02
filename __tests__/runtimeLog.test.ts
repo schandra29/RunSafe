@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
 import path from 'path';
 import { promises as fs } from 'fs';
-import { runtimeLog } from '../src/utils/runtimeLog.js';
-import { getUadoDir } from '../src/utils/getUadoDir.js';
+import { runtimeLog } from '../src/utils/runtimeLog.ts';
+import { getUadoDir } from '../src/utils/getUadoDir.ts';
 
 jest.mock('fs', () => ({
   promises: {

@@ -9,13 +9,13 @@ import {
   setQuiet,
   logJson,
   setJson,
-} from '../utils/logger.js';
-import { recordFailure, recordSuccess, getCooldownReason, logTelemetry } from '../utils/telemetry.js';
-import { runtimeLog } from '../utils/runtimeLog.js';
-import { ErrorCodes, ErrorCode } from '../constants/errorCodes.js';
-import { isInCooldown } from '../utils/cooldown.js';
-import { validateSchema } from '../utils/validateSchema.js';
-import { multiAgentReview, CouncilVerdict } from '../utils/multiAgentReview.js';
+} from '../utils/logger.ts';
+import { recordFailure, recordSuccess, getCooldownReason, logTelemetry } from '../utils/telemetry.ts';
+import { runtimeLog } from '../utils/runtimeLog.ts';
+import { ErrorCodes, ErrorCode } from '../constants/errorCodes.ts';
+import { isInCooldown } from '../utils/cooldown.ts';
+import { validateSchema } from '../utils/validateSchema.ts';
+import { multiAgentReview, CouncilVerdict } from '../utils/multiAgentReview.ts';
 
 interface ValidateOptions {
   council?: boolean;

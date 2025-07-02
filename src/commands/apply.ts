@@ -13,14 +13,14 @@ import {
   setQuiet,
   logJson,
   setJson,
-} from '../utils/logger.js';
-import { parseEpic, FileEdit } from '../utils/parseEpic.js';
-import { printUnifiedDiff } from "../utils/printUnifiedDiff.js";
-import { writePasteLog } from '../utils/pasteLog.js';
-import { isInCooldown } from '../utils/cooldown.js';
-import { recordSuccess, recordFailure, getCooldownReason, logTelemetry } from '../utils/telemetry.js';
-import { runtimeLog } from '../utils/runtimeLog.js';
-import { ErrorCodes, ErrorCode } from '../constants/errorCodes.js';
+} from '../utils/logger.ts';
+import { parseEpic, FileEdit } from '../utils/parseEpic.ts';
+import { printUnifiedDiff } from "../utils/printUnifiedDiff.ts";
+import { writePasteLog } from '../utils/pasteLog.ts';
+import { isInCooldown } from '../utils/cooldown.ts';
+import { recordSuccess, recordFailure, getCooldownReason, logTelemetry } from '../utils/telemetry.ts';
+import { runtimeLog } from '../utils/runtimeLog.ts';
+import { ErrorCodes, ErrorCode } from '../constants/errorCodes.ts';
 
 interface ApplyOptions {
   dryRun?: boolean;

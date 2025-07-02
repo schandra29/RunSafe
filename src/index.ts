@@ -1,20 +1,20 @@
 // Main CLI definition using commander
 
 import { Command } from 'commander';
-import { loadConfig } from './utils/config.js';
+import { loadConfig } from './utils/config.ts';
 import {
   logInfo,
   logError,
   logBanner,
   logWelcome,
   setQuiet,
-} from './utils/logger.js';
-import { applyEpic } from './commands/apply.js';
-import { validateEpic } from './commands/validate.js';
-import { runDoctor } from './commands/doctor.js';
-import { showHistory } from './commands/history.js';
-import { replayPaste } from './commands/replay.js';
-import { checkFirstRun } from './utils/firstRun.js';
+} from './utils/logger.ts';
+import { applyEpic } from './commands/apply.ts';
+import { validateEpic } from './commands/validate.ts';
+import { runDoctor } from './commands/doctor.ts';
+import { showHistory } from './commands/history.ts';
+import { replayPaste } from './commands/replay.ts';
+import { checkFirstRun } from './utils/firstRun.ts';
 import { createRequire } from 'module';
 
 function showBanner() {
@@ -119,7 +119,7 @@ export async function run(argv: string[]): Promise<void> {
     .command('chains')
     .description('Execute a chain of epics')
     .action(async () => {
-      const { runChains } = await import('./commands/chains.js');
+      const { runChains } = await import('./commands/chains.ts');
       await runChains();
     });
 
