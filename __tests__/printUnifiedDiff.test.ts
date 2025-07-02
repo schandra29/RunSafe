@@ -1,7 +1,7 @@
 let printUnifiedDiff: (before: string, after: string, filePath: string) => void;
 
 beforeAll(async () => {
-  ({ printUnifiedDiff } = await import('../src/utils/printUnifiedDiff.js'));
+  ({ printUnifiedDiff } = await import('../src/utils/printUnifiedDiff.ts'));
 });
 
 let logSpy: jest.SpyInstance;

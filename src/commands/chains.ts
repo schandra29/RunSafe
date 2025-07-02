@@ -2,8 +2,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { load as loadYaml } from 'js-yaml';
-import { logBanner, logError, logWarn, logSuccessFinal } from '../utils/logger.js';
-import { applyEpic } from './apply.js';
+import { logBanner, logError, logWarn, logSuccessFinal } from '../utils/logger.ts';
+import { applyEpic } from './apply.ts';
 
 interface ChainItem {
   file: string;

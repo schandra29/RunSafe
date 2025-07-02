@@ -1,5 +1,5 @@
-import { logInfo } from '../utils/logger.js';
-import { getRecentRuns, RuntimeLogEntry } from '../utils/runtimeLog.js';
+import { logInfo } from '../utils/logger.ts';
+import { getRecentRuns, RuntimeLogEntry } from '../utils/runtimeLog.ts';
 
 function formatDate(iso: string): string {
   return iso.split('T')[0];

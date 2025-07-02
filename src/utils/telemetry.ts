@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { getUadoDir } from './getUadoDir.js';
-import { readPasteLog } from './pasteLog.js';
+import { getUadoDir } from './getUadoDir.ts';
+import { readPasteLog } from './pasteLog.ts';
 
 export interface TelemetryState {
   consecutiveFailures: number;

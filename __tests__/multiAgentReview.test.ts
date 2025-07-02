@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
-import { multiAgentReview } from '../src/ai/multiAgentReview.js';
-import * as agentModule from '../src/ai/agentReview.js';
+import { multiAgentReview } from '../src/ai/multiAgentReview.ts';
+import * as agentModule from '../src/ai/agentReview.ts';
 
 describe('multiAgentReview', () => {
   afterEach(() => {

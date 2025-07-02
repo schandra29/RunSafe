@@ -1,4 +1,4 @@
-import { callAgentReview } from './agentReview.js';
+import { callAgentReview } from './agentReview.ts';
 
 export interface MultiAgentResult {
   decision: 'APPROVED' | 'REJECTED';

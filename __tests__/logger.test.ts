@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { logSummary } from '../src/utils/logger.js';
+import { logSummary } from '../src/utils/logger.ts';
 
 jest.mock('chalk', () => ({
   __esModule: true,
