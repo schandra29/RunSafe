@@ -1,1 +1,1 @@
-module.exports = require('./runtimeLog.ts');
+export { runtimeLog } from './runtimeLog.ts';

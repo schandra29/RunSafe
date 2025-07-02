@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import path from 'path';
 import { promises as fs } from 'fs';
 import { runtimeLog } from '../src/utils/runtimeLog.js';
+import { getUadoDir } from '../src/utils/getUadoDir.js';
 
 jest.mock('fs', () => ({
   promises: {
@@ -19,7 +20,7 @@ beforeEach(() => {
 
 test('logs structured entry', async () => {
   await runtimeLog('applyEpic', { foo: 'bar' }, null, null);
-  const dir = path.join(process.cwd(), '.uado');
+  const dir = getUadoDir();
   const file = path.join(dir, 'runtime.json');
   expect(mkdirMock).toHaveBeenCalledWith(dir, { recursive: true });
   expect(appendFileMock).toHaveBeenCalledWith(file, expect.any(String), 'utf8');

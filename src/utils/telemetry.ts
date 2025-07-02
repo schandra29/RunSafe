@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { getUadoDir } from './getUadoDir.js';
 import { readPasteLog } from './pasteLog.js';
 
 export interface TelemetryState {
@@ -115,7 +116,7 @@ export interface TelemetryEntry {
 }
 
 export async function logTelemetry(entry: TelemetryEntry): Promise<void> {
-  const dir = path.join(process.cwd(), '.uado');
+  const dir = getUadoDir();
   const file = path.join(dir, 'telemetry.jsonl');
   try {
     await fs.mkdir(dir, { recursive: true });
