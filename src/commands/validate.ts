@@ -6,7 +6,7 @@ import {
   logSuccessFinal,
   logCooldownWarning,
 } from '../utils/logger.js';
-import { recordFailure, recordSuccess, getCooldownReason } from '../utils/telemetry.js';
+import { recordFailure, recordSuccess, getCooldownReason, logTelemetry } from '../utils/telemetry.js';
 import { isInCooldown } from '../utils/cooldown.js';
 import { validateSchema } from '../utils/validateSchema.js';
 import { multiAgentReview, CouncilVerdict } from '../utils/multiAgentReview.js';
@@ -16,6 +16,11 @@ interface ValidateOptions {
 }
 
 export async function validateEpic(epicFilePath: string, options: ValidateOptions): Promise<void> {
+  await logTelemetry({
+    command: 'validateEpic',
+    timestamp: Date.now(),
+    flags: Object.keys(options || {}),
+  });
   if (await isInCooldown()) {
     logCooldownWarning();
     const reason = await getCooldownReason();

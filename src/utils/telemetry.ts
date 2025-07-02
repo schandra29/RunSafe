@@ -107,3 +107,20 @@ export async function getCooldownReason(): Promise<string | null> {
   }
   return null;
 }
+
+export interface TelemetryEntry {
+  command: string;
+  timestamp: number;
+  flags?: string[];
+}
+
+export async function logTelemetry(entry: TelemetryEntry): Promise<void> {
+  const dir = path.join(process.cwd(), '.uado');
+  const file = path.join(dir, 'telemetry.jsonl');
+  try {
+    await fs.mkdir(dir, { recursive: true });
+    await fs.appendFile(file, JSON.stringify(entry) + '\n', 'utf8');
+  } catch {
+    // fail silently
+  }
+}
