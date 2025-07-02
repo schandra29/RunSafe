@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "bun:test";
+import { setupTestFile } from "./testSetup.ts";
+setupTestFile(import.meta.url);
 import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
 import { parseEpic } from '../src/utils/parseEpic.ts';

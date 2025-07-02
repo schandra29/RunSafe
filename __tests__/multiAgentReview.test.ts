@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "bun:test";
+import { setupTestFile } from "./testSetup.ts";
+setupTestFile(import.meta.url);
 import { multiAgentReview } from '../src/ai/multiAgentReview.ts';
 import * as agentModule from '../src/ai/agentReview.ts';
 

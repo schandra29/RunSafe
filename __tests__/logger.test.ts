@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "bun:test";
+import { setupTestFile } from "./testSetup.ts";
+setupTestFile(import.meta.url);
 import { logSummary } from '../src/utils/logger.ts';
 
 vi.mock('chalk', () => ({
