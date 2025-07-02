@@ -7,6 +7,7 @@ import {
   logCooldownWarning,
 } from '../utils/logger.js';
 import { recordFailure, recordSuccess, getCooldownReason, logTelemetry } from '../utils/telemetry.js';
+import { runtimeLog } from '../utils/runtimeLog.js';
 import { isInCooldown } from '../utils/cooldown.js';
 import { validateSchema } from '../utils/validateSchema.js';
 import { multiAgentReview, CouncilVerdict } from '../utils/multiAgentReview.js';
@@ -16,6 +17,8 @@ interface ValidateOptions {
 }
 
 export async function validateEpic(epicFilePath: string, options: ValidateOptions): Promise<void> {
+  const cooldownReason = await getCooldownReason();
+  await runtimeLog('validateEpic', { epicFilePath, options }, cooldownReason, null);
   await logTelemetry({
     command: 'validateEpic',
     timestamp: Date.now(),
@@ -23,8 +26,7 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
   });
   if (await isInCooldown()) {
     logCooldownWarning();
-    const reason = await getCooldownReason();
-    if (reason) logInfo(`Reason: ${reason}`);
+    if (cooldownReason) logInfo(`Reason: ${cooldownReason}`);
     return;
   }
 
@@ -32,20 +34,22 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
   let raw: string;
   try {
     raw = await fs.readFile(absPath, 'utf8');
-  } catch {
+  } catch (err) {
     logError('Epic file not found');
     await recordFailure();
     process.exitCode = 1;
+    await runtimeLog('validateEpic', { epicFilePath, options }, cooldownReason, (err as Error).message);
     return;
   }
 
   let epic: any;
   try {
     epic = JSON.parse(raw);
-  } catch {
+  } catch (err) {
     logError('Invalid JSON format');
     await recordFailure();
     process.exitCode = 1;
+    await runtimeLog('validateEpic', { epicFilePath, options }, cooldownReason, (err as Error).message);
     return;
   }
 

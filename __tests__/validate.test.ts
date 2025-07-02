@@ -9,7 +9,7 @@ import { recordSuccess, recordFailure, getCooldownReason } from '../src/utils/te
 
 jest.mock('chalk', () => ({__esModule: true, default: {red:(s:any)=>s, green:(s:any)=>s, cyan:(s:any)=>s, yellow:(s:any)=>s, blue:(s:any)=>s, magenta:(s:any)=>s}}));
 
-jest.mock('fs', () => ({ promises: { readFile: jest.fn(), appendFile: jest.fn() } }));
+jest.mock('fs', () => ({ promises: { readFile: jest.fn(), appendFile: jest.fn(), mkdir: jest.fn() } }));
 jest.mock('../src/utils/logger', () => ({
   logInfo: jest.fn(),
   logError: jest.fn(),
