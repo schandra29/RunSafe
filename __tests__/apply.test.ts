@@ -68,6 +68,9 @@ beforeEach(() => {
   readFileMock.mockReset();
   writeFileMock.mockReset();
   parseEpicMock.mockReset();
+  // mock process.exit so tests don't exit
+  // @ts-ignore
+  process.exit = jest.fn();
 });
 
 function epicObj(edits: any[] = []) {
@@ -92,6 +95,7 @@ test('gracefully handles invalid epic', async () => {
     code: ErrorCodes.INVALID_EPIC,
   });
   expect(writeFileMock).not.toHaveBeenCalled();
+  expect(process.exit).toHaveBeenCalledWith(1);
 });
 
 /** Test 2 */
@@ -106,6 +110,14 @@ test('logs error if readFile throws', async () => {
     message: 'read fail',
     code: ErrorCodes.FILE_READ_FAIL,
   });
+  expect(process.exit).toHaveBeenCalledWith(1);
+});
+
+/** New Test */
+test('does not exit on dry-run failures', async () => {
+  readFileMock.mockRejectedValueOnce(new Error('fail'));
+  await expect(applyEpic('e.md', { dryRun: true })).resolves.toBeUndefined();
+  expect(process.exit).not.toHaveBeenCalled();
 });
 
 /** Test 3 */

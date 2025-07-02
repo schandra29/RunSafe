@@ -141,6 +141,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     success = false;
     if (summary) logSummary({ success, files: [], error: error.message });
     if (json) emitJson();
+    if (!options.dryRun) process.exit(1);
     return;
   }
 
@@ -163,6 +164,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     success = false;
     if (summary) logSummary({ success, files: [], error: error.message });
     if (json) emitJson();
+    if (!options.dryRun) process.exit(1);
     return;
   }
 

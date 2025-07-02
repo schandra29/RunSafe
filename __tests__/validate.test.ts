@@ -43,6 +43,9 @@ beforeEach(() => {
   ((getCooldownReason as any)).mockResolvedValue('Test');
   ((validateSchema as any)).mockReturnValue({ valid: true });
   readFileMock.mockResolvedValue('{}');
+  // mock process.exit so tests don't exit
+  // @ts-ignore
+  process.exit = jest.fn();
 });
 
 describe('validateEpic', () => {
@@ -58,15 +61,14 @@ describe('validateEpic', () => {
   it('Invalid epic structure logs schema failure and exits with non-zero', async () => {
     readFileMock.mockResolvedValueOnce(JSON.stringify({}));
     ((validateSchema as any)).mockReturnValueOnce({ valid: false, errors: ['bad'] });
-    process.exitCode = 0;
     await validateEpic('epic.json', {});
     expect(logError).toHaveBeenCalledWith(`❌ [${ErrorCodes.INVALID_EPIC}] Epic schema validation failed`);
-    expect(logError).toHaveBeenCalledWith('💡 Tip: Use --dry-run to preview changes without applying.');
+    expect(logError).toHaveBeenCalledWith('💡 Tip: Check the epic structure against the required schema.');
     expect(recordFailure).toHaveBeenCalledWith({
       message: 'Epic schema validation failed',
       code: ErrorCodes.INVALID_EPIC,
     });
-    expect(process.exitCode).toBe(1);
+    expect(process.exit).toHaveBeenCalledWith(1);
   });
 
   it('Cooldown active: should abort and print cooldown warning', async () => {
@@ -111,14 +113,16 @@ describe('validateEpic', () => {
     readFileMock.mockRejectedValueOnce(new Error('nope'));
     await validateEpic('missing.json', {});
     expect(logError).toHaveBeenCalledWith(`❌ [${ErrorCodes.FILE_READ_FAIL}] Epic file not found`);
-    expect(logError).toHaveBeenCalledWith('💡 Tip: Use --dry-run to preview changes without applying.');
+    expect(logError).toHaveBeenCalledWith('💡 Tip: Check the file path and ensure the epic file exists.');
+    expect(process.exit).toHaveBeenCalledWith(1);
 
     jest.resetAllMocks();
     ((isInCooldown as any)).mockResolvedValue(false);
     readFileMock.mockResolvedValueOnce('not json');
     await validateEpic('bad.json', {});
     expect(logError).toHaveBeenCalledWith(`❌ [${ErrorCodes.INVALID_EPIC}] Invalid JSON format`);
-    expect(logError).toHaveBeenCalledWith('💡 Tip: Use --dry-run to preview changes without applying.');
+    expect(logError).toHaveBeenCalledWith('💡 Tip: Check the JSON syntax and ensure the file is properly formatted.');
+    expect(process.exit).toHaveBeenCalledWith(1);
   });
 
   it('Summary mode outputs json only', async () => {
