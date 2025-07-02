@@ -13,7 +13,7 @@ import { parseEpic, FileEdit } from '../utils/parseEpic.js';
 import { printUnifiedDiff } from "../utils/printUnifiedDiff.js";
 import { writePasteLog } from '../utils/pasteLog.js';
 import { isInCooldown } from '../utils/cooldown.js';
-import { recordSuccess, recordFailure, getCooldownReason } from '../utils/telemetry.js';
+import { recordSuccess, recordFailure, getCooldownReason, logTelemetry } from '../utils/telemetry.js';
 
 interface ApplyOptions {
   dryRun?: boolean;
@@ -71,6 +71,11 @@ function diffLines(oldStr: string, newStr: string): string {
 }
 
 export async function applyEpic(file: string, options: ApplyOptions): Promise<void> {
+  await logTelemetry({
+    command: 'applyEpic',
+    timestamp: Date.now(),
+    flags: Object.keys(options || {}),
+  });
   if (await isInCooldown()) {
     logCooldownWarning();
     const reason = await getCooldownReason();
