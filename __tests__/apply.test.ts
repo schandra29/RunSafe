@@ -216,3 +216,50 @@ test('silent mode suppresses logs but shows errors', async () => {
   expect(logger.logSuccessFinal).not.toHaveBeenCalled();
   expect(logger.logInfo).not.toHaveBeenCalled();
 });
+
+/** Test 11 */
+test('json mode outputs structured data on success', async () => {
+  readFileMock.mockResolvedValueOnce('md');
+  readFileMock.mockResolvedValueOnce(Buffer.from('a'));
+  parseEpicMock.mockReturnValueOnce(epicObj([edit('a.txt')]));
+  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  await applyEpic('e.md', { json: true });
+  const obj = JSON.parse(spy.mock.calls[0][0]);
+  expect(obj.command).toBe('applyEpic');
+  expect(obj.success).toBe(true);
+  expect(obj.edits[0].status).toBe('applied');
+  spy.mockRestore();
+});
+
+/** Test 12 */
+test('json mode outputs errors on failure', async () => {
+  readFileMock.mockRejectedValueOnce(new Error('fail'));
+  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  await applyEpic('e.md', { json: true });
+  const obj = JSON.parse(spy.mock.calls[0][0]);
+  expect(obj.success).toBe(false);
+  expect(obj.errors[0].message).toBe('fail');
+  spy.mockRestore();
+});
+
+/** Test 13 */
+test('json mode indicates cooldown', async () => {
+  (isInCooldown as jest.Mock).mockResolvedValueOnce(true);
+  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  await applyEpic('e.md', { json: true });
+  const obj = JSON.parse(spy.mock.calls[0][0]);
+  expect(obj.cooldown).toBe(true);
+  spy.mockRestore();
+});
+
+/** Test 14 */
+test('json mode marks skipped edits in dry-run', async () => {
+  readFileMock.mockResolvedValueOnce('md');
+  readFileMock.mockResolvedValueOnce(Buffer.from('a'));
+  parseEpicMock.mockReturnValueOnce(epicObj([edit('a.txt')]));
+  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  await applyEpic('e.md', { json: true, dryRun: true });
+  const obj = JSON.parse(spy.mock.calls[0][0]);
+  expect(obj.edits[0].status).toBe('skipped');
+  spy.mockRestore();
+});

@@ -11,6 +11,8 @@ import {
   logSummary,
   LogSummaryFile,
   setQuiet,
+  logJson,
+  setJson,
 } from '../utils/logger.js';
 import { parseEpic, FileEdit } from '../utils/parseEpic.js';
 import { printUnifiedDiff } from "../utils/printUnifiedDiff.js";
@@ -26,6 +28,7 @@ interface ApplyOptions {
   atomic?: boolean;
   summary?: boolean;
   silent?: boolean;
+  json?: boolean;
 }
 
 function isBinary(buf: Buffer): boolean {
@@ -74,12 +77,31 @@ function diffLines(oldStr: string, newStr: string): string {
 }
 
 export async function applyEpic(file: string, options: ApplyOptions): Promise<void> {
-  const summary = !!options.summary;
-  const silent = !!options.silent;
-  if (summary || silent) setQuiet(true);
+  const json = !!options.json;
+  const summary = !!options.summary && !json;
+  const silent = !!options.silent && !json;
+  if (summary || silent || json) setQuiet(true);
+  if (json) setJson(true);
   let success = true;
   let error: { message: string; code: ErrorCode } | null = null;
   let summaryFiles: LogSummaryFile[] = [];
+  let summaryText = '';
+  let cooldown = false;
+
+  function emitJson() {
+    logJson({
+      command: 'applyEpic',
+      success,
+      edits: summaryFiles.map(f => ({
+        filePath: f.filePath,
+        status: options.dryRun ? 'skipped' : success ? 'applied' : 'failed',
+      })),
+      errors: error ? [{ message: error.message, code: error.code }] : undefined,
+      cooldown,
+      cooldownReason: cooldown ? cooldownReason || undefined : undefined,
+      summary: summaryText,
+    });
+  }
 
   const cooldownReason = await getCooldownReason();
   await runtimeLog('applyEpic', { file, options }, cooldownReason, null);
@@ -91,6 +113,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
   if (await isInCooldown()) {
     success = false;
     error = { message: 'Cooldown active', code: ErrorCodes.COOLDOWN_ACTIVE };
+    cooldown = true;
     if (!summary && !silent) {
       logCooldownWarning();
       if (cooldownReason) logWarn(`Reason: ${cooldownReason}`);
@@ -99,6 +122,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       const reason = cooldownReason ? `Cooldown active: ${cooldownReason}` : 'Cooldown active';
       logSummary({ success, files: [], cooldown: reason });
     }
+    if (json) emitJson();
     return;
   }
   const workspace = process.cwd();
@@ -116,6 +140,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     await runtimeLog('applyEpic', { file, options }, cooldownReason, error.message, error.code);
     success = false;
     if (summary) logSummary({ success, files: [], error: error.message });
+    if (json) emitJson();
     return;
   }
 
@@ -137,12 +162,14 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     await runtimeLog('applyEpic', { file, options }, cooldownReason, error.message, error.code);
     success = false;
     if (summary) logSummary({ success, files: [], error: error.message });
+    if (json) emitJson();
     return;
   }
 
   if (!silent && !summary) {
     logInfo(`Summary:\n${epic.summary}`);
   }
+  summaryText = epic.summary;
 
   summaryFiles = Object.entries(
     epic.edits.reduce((acc: Record<string, string[]>, e) => {
@@ -185,6 +212,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     if (options.dryRun) {
       if (!summary && !silent) logDryRunNotice();
       if (summary) logSummary({ success: true, files: summaryFiles });
+      if (json) emitJson();
       return;
     }
 
@@ -246,4 +274,5 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
       throw err;
     }
   }
+  if (json) emitJson();
 }
