@@ -44,3 +44,13 @@ export function logCooldownWarning(): void {
     )
   );
 }
+
+export function logSuccessFinal(msg: string): void {
+  if (quiet) return;
+  console.log(chalk.green(`🌱 ${msg}`));
+}
+
+export function logDryRunNotice(): void {
+  if (quiet) return;
+  console.log(chalk.yellow('🚧 Dry-run mode enabled. No changes were written.'));
+}

@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { parseEpic, FileEdit } from '../utils/parseEpic.js';
-import { logError, logSuccess } from '../utils/logger.js';
+import { logError, logSuccessFinal } from '../utils/logger.js';
 import { recordFailure } from '../utils/telemetry.js';
 
 interface ValidateOptions {
@@ -67,7 +67,7 @@ export async function validateEpic(file: string, opts: ValidateOptions): Promise
     }
   }
 
-  logSuccess('✅ Epic is valid and safe to apply.');
+  logSuccessFinal("Validation passed. You're good to go!");
 
   if (opts.council) {
     const council =

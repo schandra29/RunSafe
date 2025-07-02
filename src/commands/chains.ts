@@ -2,7 +2,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { load as loadYaml } from 'js-yaml';
-import { logBanner, logError, logWarn } from '../utils/logger.js';
+import { logBanner, logError, logWarn, logSuccessFinal } from '../utils/logger.js';
 import { applyEpic } from './apply.js';
 
 interface ChainItem {
@@ -73,4 +73,6 @@ export async function runChains(): Promise<void> {
       return;
     }
   }
+
+  logSuccessFinal('Chain completed successfully.');
 }

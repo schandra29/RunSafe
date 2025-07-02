@@ -1,7 +1,7 @@
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
-import { logInfo, logSuccess, logError, logWarn } from '../utils/logger.js';
+import { logInfo, logSuccess, logError, logWarn, logSuccessFinal } from '../utils/logger.js';
 import { resetCooldown, recordFailure } from '../utils/telemetry.js';
 
 async function checkNodeVersion(): Promise<boolean> {
@@ -103,7 +103,7 @@ export async function runDoctor(): Promise<void> {
     logError('🚨 Something looks off. Use runsafe doctor to investigate.');
     await recordFailure();
   } else {
-    logSuccess('✅ All systems go!');
+    logSuccessFinal('All systems go! 🚀');
     await resetCooldown();
   }
 }
