@@ -120,3 +120,7 @@ export function logSummary(opts: LogSummaryOptions): void {
 export function logJson(data: unknown): void {
   console.log(JSON.stringify(data));
 }
+
+export function printOptionalSummary(text?: string): void {
+  if (text) console.log(text);
+}

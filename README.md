@@ -136,11 +136,19 @@ Project layout:
 
 - `src/` – command and utility source files
 - `bin/` – the CLI entry point
-- `__tests__/` – Jest test suite
+- `__tests__/` – Bun test suite
 
 Feel free to submit new epics or features via pull request.
 
-## 10. Credits & Vision
+## 10. Test Troubleshooting Tips
+
+If `bun test` reports no tests found:
+- Ensure files end with `.test.ts`.
+- Run `bun test path/to/your.test.ts` to debug specific files.
+- Use `npm run test:debug` to launch the Bun inspector.
+
+
+## 11. Credits & Vision
 
 RunSafe was built through an AI + human collaboration with the goal of **democratizing safe software creation**. Fork it, remix it, and adapt the ideas for your own team. Together we can make AI‑assisted development safe and transparent for everyone.
 

@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "bun:test";
+import { setupTestFile } from "./testSetup.ts";
+setupTestFile(import.meta.url);
 import path from 'path';
 import { promises as fs } from 'fs';
 import { logTelemetry } from '../src/utils/telemetry.ts';
