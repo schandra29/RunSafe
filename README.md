@@ -2,6 +2,8 @@
 
 ## 1. Project Overview
 
+**Node-based scripts are deprecated. Long live Bun 🥐**
+
 RunSafe is a CLI tool for safely applying AI-generated **epics** (markdown files describing file edits). It provides a structured, human-in-the-loop workflow so you can review and control every change before it touches your codebase. Think of it as a guardrail around AI-assisted development.
 
 Why RunSafe?
@@ -18,7 +20,8 @@ RunSafe fits into any workflow where AI suggests code changes but a developer wa
 # Clone the repo and install dependencies
 git clone <REPO-URL>
 cd RunSafe
-npm install
+curl -fsSL https://bun.sh/install | bash
+bun install
 ```
 
 Node 18+ is recommended. The `runsafe` binary is installed locally but we will use the `uado` prefix in the examples below.
@@ -126,7 +129,7 @@ Every run appends a structured entry to `.uado/runtime.json`. Each entry records
 We love contributions! To run tests:
 
 ```bash
-npm test
+bun test
 ```
 
 Project layout:

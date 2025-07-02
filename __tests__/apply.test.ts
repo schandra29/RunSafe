@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "bun:test";
 import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
 import { parseEpic } from '../src/utils/parseEpic.ts';
@@ -8,69 +8,69 @@ import * as telemetry from '../src/utils/telemetry.ts';
 import { isInCooldown } from '../src/utils/cooldown.ts';
 import { ErrorCodes } from '../src/constants/errorCodes.ts';
 
-jest.mock('chalk', () => ({
+vi.mock('chalk', () => ({
   __esModule: true,
   default: { red: (s: any) => s, green: (s: any) => s, cyan: (s: any) => s, yellow: (s: any) => s, blue: (s: any) => s, magenta: (s: any) => s },
 }));
 
 // Mocks
-jest.mock('fs', () => ({
+vi.mock('fs', () => ({
   promises: {
-    readFile: jest.fn(),
-    writeFile: jest.fn(),
-    mkdir: jest.fn(),
-    appendFile: jest.fn(),
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    mkdir: vi.fn(),
+    appendFile: vi.fn(),
   },
 }));
 
-jest.mock('../src/utils/parseEpic.ts', () => ({
-  parseEpic: jest.fn(),
+vi.mock('../src/utils/parseEpic.ts', () => ({
+  parseEpic: vi.fn(),
 }));
 
-jest.mock('../src/utils/logger.ts', () => {
-  const actual = jest.requireActual('../src/utils/logger.ts');
+vi.mock('../src/utils/logger.ts', () => {
+  const actual = vi.requireActual('../src/utils/logger.ts');
   return {
     ...actual,
-    logInfo: jest.fn(),
-    logError: jest.fn(),
-    logSuccessFinal: jest.fn(),
-    logDryRunNotice: jest.fn(),
-    logWarn: jest.fn(),
-    logCooldownWarning: jest.fn(),
-    setQuiet: jest.fn(),
+    logInfo: vi.fn(),
+    logError: vi.fn(),
+    logSuccessFinal: vi.fn(),
+    logDryRunNotice: vi.fn(),
+    logWarn: vi.fn(),
+    logCooldownWarning: vi.fn(),
+    setQuiet: vi.fn(),
   };
 });
 
-jest.mock('../src/utils/telemetry.ts', () => ({
-  recordSuccess: jest.fn(),
-  recordFailure: jest.fn(),
-  getCooldownReason: jest.fn().mockResolvedValue(null),
-  logTelemetry: jest.fn(),
+vi.mock('../src/utils/telemetry.ts', () => ({
+  recordSuccess: vi.fn(),
+  recordFailure: vi.fn(),
+  getCooldownReason: vi.fn().mockResolvedValue(null),
+  logTelemetry: vi.fn(),
 }));
 
-jest.mock('../src/utils/cooldown.ts', () => ({
-  isInCooldown: jest.fn().mockResolvedValue(false),
+vi.mock('../src/utils/cooldown.ts', () => ({
+  isInCooldown: vi.fn().mockResolvedValue(false),
 }));
 
-jest.mock('../src/utils/pasteLog.ts', () => ({
-  writePasteLog: jest.fn(),
+vi.mock('../src/utils/pasteLog.ts', () => ({
+  writePasteLog: vi.fn(),
 }));
 
 // Setup
-const readFileMock = fsPromises.readFile as jest.Mock;
-const writeFileMock = fsPromises.writeFile as jest.Mock;
-const parseEpicMock = parseEpic as jest.Mock;
-const logErrorMock = logger.logError as jest.Mock;
+const readFileMock = fsPromises.readFile as vi.Mock;
+const writeFileMock = fsPromises.writeFile as vi.Mock;
+const parseEpicMock = parseEpic as vi.Mock;
+const logErrorMock = logger.logError as vi.Mock;
 
 beforeEach(() => {
-  jest.resetAllMocks();
-  (isInCooldown as jest.Mock).mockResolvedValue(false);
+  vi.resetAllMocks();
+  (isInCooldown as vi.Mock).mockResolvedValue(false);
   readFileMock.mockReset();
   writeFileMock.mockReset();
   parseEpicMock.mockReset();
   // mock process.exit so tests don't exit
   // @ts-ignore
-  process.exit = jest.fn();
+  process.exit = vi.fn();
 });
 
 function epicObj(edits: any[] = []) {
@@ -82,7 +82,7 @@ function edit(file: string) {
 }
 
 /** Test 1 */
-test('gracefully handles invalid epic', async () => {
+it('gracefully handles invalid epic', async () => {
   readFileMock.mockResolvedValue('bad');
   parseEpicMock.mockReturnValueOnce(null);
 
@@ -99,7 +99,7 @@ test('gracefully handles invalid epic', async () => {
 });
 
 /** Test 2 */
-test('logs error if readFile throws', async () => {
+it('logs error if readFile throws', async () => {
   readFileMock.mockRejectedValueOnce(new Error('read fail'));
 
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
@@ -114,14 +114,14 @@ test('logs error if readFile throws', async () => {
 });
 
 /** New Test */
-test('does not exit on dry-run failures', async () => {
+it('does not exit on dry-run failures', async () => {
   readFileMock.mockRejectedValueOnce(new Error('fail'));
   await expect(applyEpic('e.md', { dryRun: true })).resolves.toBeUndefined();
   expect(process.exit).not.toHaveBeenCalled();
 });
 
 /** Test 3 */
-test('exits cleanly if write fails non-atomic', async () => {
+it('exits cleanly if write fails non-atomic', async () => {
   readFileMock.mockResolvedValueOnce('md'); // epic file
   readFileMock.mockResolvedValueOnce(Buffer.from('a')); // a.txt
   readFileMock.mockResolvedValueOnce(Buffer.from('b')); // b.txt
@@ -140,7 +140,7 @@ test('exits cleanly if write fails non-atomic', async () => {
 });
 
 /** Test 4 */
-test('atomic rollback on write failure', async () => {
+it('atomic rollback on write failure', async () => {
   readFileMock.mockResolvedValueOnce('md');
   readFileMock.mockResolvedValueOnce(Buffer.from('a'));
   readFileMock.mockResolvedValueOnce(Buffer.from('b'));
@@ -162,7 +162,7 @@ test('atomic rollback on write failure', async () => {
 });
 
 /** Test 5 */
-test('throws friendly error on unsupported edit', async () => {
+it('throws friendly error on unsupported edit', async () => {
   readFileMock.mockResolvedValueOnce('md');
   readFileMock.mockResolvedValueOnce(Buffer.from('a'));
   parseEpicMock.mockReturnValueOnce(epicObj([{ filePath: 'x', type: 'weird', target: [], replacement: [] }]));
@@ -171,7 +171,7 @@ test('throws friendly error on unsupported edit', async () => {
 });
 
 /** Test 6 */
-test('logs stack trace only in debug', async () => {
+it('logs stack trace only in debug', async () => {
   const err = new Error('fail');
   parseEpicMock.mockImplementationOnce(() => { throw err; });
   readFileMock.mockResolvedValueOnce('md');
@@ -180,7 +180,7 @@ test('logs stack trace only in debug', async () => {
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
   expect(logErrorMock).toHaveBeenCalledWith(`❌ [${ErrorCodes.INVALID_EPIC}] ${err.message}`);
 
-  jest.resetAllMocks();
+  vi.resetAllMocks();
   parseEpicMock.mockImplementationOnce(() => { throw err; });
   readFileMock.mockResolvedValueOnce('md');
 
@@ -190,11 +190,11 @@ test('logs stack trace only in debug', async () => {
 });
 
 /** Test 7 */
-test('fallback logging if logger fails', async () => {
+it('fallback logging if logger fails', async () => {
   readFileMock.mockResolvedValue('md');
   parseEpicMock.mockImplementation(() => { throw new Error('bad'); });
-  (logger.logError as jest.Mock).mockImplementationOnce(() => { throw new Error('logger'); });
-  const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  (logger.logError as vi.Mock).mockImplementationOnce(() => { throw new Error('logger'); });
+  const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
 
@@ -203,7 +203,7 @@ test('fallback logging if logger fails', async () => {
 });
 
 /** Test 8 */
-test('suggests dry-run on failure', async () => {
+it('suggests dry-run on failure', async () => {
   readFileMock.mockRejectedValueOnce(new Error('fail'));
 
   await expect(applyEpic('e.md', {})).resolves.toBeUndefined();
@@ -212,10 +212,10 @@ test('suggests dry-run on failure', async () => {
 });
 
 /** Test 9 */
-test('summary mode outputs json only', async () => {
+it('summary mode outputs json only', async () => {
   readFileMock.mockResolvedValueOnce('md');
   parseEpicMock.mockReturnValueOnce(epicObj([]));
-  const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
   await expect(applyEpic('e.md', { summary: true })).resolves.toBeUndefined();
   const output = consoleSpy.mock.calls[0][0];
   expect(output).toContain('✅ 0 applied');
@@ -225,7 +225,7 @@ test('summary mode outputs json only', async () => {
 });
 
 /** Test 10 */
-test('silent mode suppresses logs but shows errors', async () => {
+it('silent mode suppresses logs but shows errors', async () => {
   readFileMock.mockRejectedValueOnce(new Error('oops'));
   await expect(applyEpic('e.md', { silent: true })).resolves.toBeUndefined();
   expect(logger.logError).toHaveBeenCalled();
@@ -234,11 +234,11 @@ test('silent mode suppresses logs but shows errors', async () => {
 });
 
 /** Test 11 */
-test('json mode outputs structured data on success', async () => {
+it('json mode outputs structured data on success', async () => {
   readFileMock.mockResolvedValueOnce('md');
   readFileMock.mockResolvedValueOnce(Buffer.from('a'));
   parseEpicMock.mockReturnValueOnce(epicObj([edit('a.txt')]));
-  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
   await applyEpic('e.md', { json: true });
   const obj = JSON.parse(spy.mock.calls[0][0]);
   expect(obj.command).toBe('applyEpic');
@@ -248,9 +248,9 @@ test('json mode outputs structured data on success', async () => {
 });
 
 /** Test 12 */
-test('json mode outputs errors on failure', async () => {
+it('json mode outputs errors on failure', async () => {
   readFileMock.mockRejectedValueOnce(new Error('fail'));
-  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
   await applyEpic('e.md', { json: true });
   const obj = JSON.parse(spy.mock.calls[0][0]);
   expect(obj.success).toBe(false);
@@ -259,9 +259,9 @@ test('json mode outputs errors on failure', async () => {
 });
 
 /** Test 13 */
-test('json mode indicates cooldown', async () => {
-  (isInCooldown as jest.Mock).mockResolvedValueOnce(true);
-  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+it('json mode indicates cooldown', async () => {
+  (isInCooldown as vi.Mock).mockResolvedValueOnce(true);
+  const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
   await applyEpic('e.md', { json: true });
   const obj = JSON.parse(spy.mock.calls[0][0]);
   expect(obj.cooldown).toBe(true);
@@ -269,10 +269,10 @@ test('json mode indicates cooldown', async () => {
 });
 
 /** New Test */
-test('shows cooldown warning message', async () => {
-  (isInCooldown as jest.Mock).mockResolvedValueOnce(true);
-  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
-  (logger.logCooldownWarning as jest.Mock).mockImplementation(() => {
+it('shows cooldown warning message', async () => {
+  (isInCooldown as vi.Mock).mockResolvedValueOnce(true);
+  const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  (logger.logCooldownWarning as vi.Mock).mockImplementation(() => {
     console.log('🧊 Cooldown Active\nYou\u2019ve hit a safety cooldown. Wait a few seconds and try again.');
   });
   await applyEpic('e.md', {});
@@ -283,11 +283,11 @@ test('shows cooldown warning message', async () => {
 });
 
 /** Test 14 */
-test('json mode marks skipped edits in dry-run', async () => {
+it('json mode marks skipped edits in dry-run', async () => {
   readFileMock.mockResolvedValueOnce('md');
   readFileMock.mockResolvedValueOnce(Buffer.from('a'));
   parseEpicMock.mockReturnValueOnce(epicObj([edit('a.txt')]));
-  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
   await applyEpic('e.md', { json: true, dryRun: true });
   const obj = JSON.parse(spy.mock.calls[0][0]);
   expect(obj.edits[0].status).toBe('skipped');

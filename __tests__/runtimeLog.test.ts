@@ -1,24 +1,24 @@
-import { jest } from '@jest/globals';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "bun:test";
 import path from 'path';
 import { promises as fs } from 'fs';
 import { runtimeLog } from '../src/utils/runtimeLog.ts';
 import { getUadoDir } from '../src/utils/getUadoDir.ts';
 
-jest.mock('fs', () => ({
+vi.mock('fs', () => ({
   promises: {
-    appendFile: jest.fn(),
-    mkdir: jest.fn(),
+    appendFile: vi.fn(),
+    mkdir: vi.fn(),
   },
 }));
 
-const appendFileMock = fs.appendFile as unknown as jest.Mock;
-const mkdirMock = fs.mkdir as unknown as jest.Mock;
+const appendFileMock = fs.appendFile as unknown as vi.Mock;
+const mkdirMock = fs.mkdir as unknown as vi.Mock;
 
 beforeEach(() => {
-  jest.resetAllMocks();
+  vi.resetAllMocks();
 });
 
-test('logs structured entry', async () => {
+it('logs structured entry', async () => {
   const result = await runtimeLog('applyEpic', { foo: 'bar' }, null, null);
   const dir = getUadoDir();
   const file = path.join(dir, 'runtime.json');
@@ -34,7 +34,7 @@ test('logs structured entry', async () => {
   expect(result).toEqual(entry);
 });
 
-test('includes cooldown and error', async () => {
+it('includes cooldown and error', async () => {
   await runtimeLog('validateEpic', { id: 1 }, 'cool', 'boom', 'E002');
   const entry = JSON.parse(appendFileMock.mock.calls[0][1].trim());
   expect(entry.cooldownReason).toBe('cool');
@@ -43,7 +43,7 @@ test('includes cooldown and error', async () => {
   expect(entry.commandName).toBe('validateEpic');
 });
 
-test('returns structured entry', async () => {
+it('returns structured entry', async () => {
   const result = await runtimeLog('applyEpic', { foo: 'bar' }, null, null);
   const appended = JSON.parse(appendFileMock.mock.calls[0][1].trim());
   expect(result).toEqual(appended);
