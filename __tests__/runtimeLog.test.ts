@@ -20,7 +20,7 @@ beforeEach(() => {
 test('logs structured entry', async () => {
   await runtimeLog('applyEpic', { foo: 'bar' }, null, null);
   const dir = path.join(process.cwd(), '.uado');
-  const file = path.join(dir, 'runtime.jsonl');
+  const file = path.join(dir, 'runtime.json');
   expect(mkdirMock).toHaveBeenCalledWith(dir, { recursive: true });
   expect(appendFileMock).toHaveBeenCalledWith(file, expect.any(String), 'utf8');
   const entry = JSON.parse(appendFileMock.mock.calls[0][1].trim());

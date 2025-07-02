@@ -24,7 +24,7 @@ function showBanner() {
 }
 
 function showWelcome() {
-  const msg = `🚀 Welcome to RunSafe – The CLI that applies AI-generated markdown, safely.\n 🔍 Try runsafe doctor to check your environment.\n 📚 See runsafe help for available commands.`;
+  const msg = `🚀 Welcome to RunSafe – The CLI that applies AI-generated markdown, safely.\n 🔍 Try runsafe uado doctor to check recent runs.\n 📚 See runsafe help for available commands.`;
   logWelcome(msg);
 }
 
@@ -52,7 +52,7 @@ export async function run(argv: string[]): Promise<void> {
 
   program.addHelpText(
     'after',
-    '\nExamples:\n  $ runsafe apply epic-001.md --dry-run\n  $ runsafe validate epic-001.md --council\n  $ runsafe doctor'
+    '\nExamples:\n  $ runsafe apply epic-001.md --dry-run\n  $ runsafe validate epic-001.md --council\n  $ runsafe uado doctor'
   );
 
   program
@@ -75,10 +75,13 @@ export async function run(argv: string[]): Promise<void> {
       await validateEpic(epic, opts);
     });
 
-  program
+
+  const uado = program.command('uado').description('Developer utilities');
+
+  uado
     .command('doctor')
-    .description('Run diagnostics')
-    .addHelpText('after', '\nExamples:\n  $ runsafe doctor')
+    .description('Show recent run health summary')
+    .addHelpText('after', '\nExamples:\n  $ runsafe uado doctor')
     .action(async () => {
       await runDoctor();
     });
