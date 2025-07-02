@@ -7,6 +7,8 @@ import {
   logCooldownWarning,
   logSummary,
   setQuiet,
+  logJson,
+  setJson,
 } from '../utils/logger.js';
 import { recordFailure, recordSuccess, getCooldownReason, logTelemetry } from '../utils/telemetry.js';
 import { runtimeLog } from '../utils/runtimeLog.js';
@@ -19,14 +21,31 @@ interface ValidateOptions {
   council?: boolean;
   summary?: boolean;
   silent?: boolean;
+  json?: boolean;
 }
 
 export async function validateEpic(epicFilePath: string, options: ValidateOptions): Promise<void> {
-  const summary = !!options.summary;
-  const silent = !!options.silent;
-  if (summary || silent) setQuiet(true);
+  const json = !!options.json;
+  const summary = !!options.summary && !json;
+  const silent = !!options.silent && !json;
+  if (summary || silent || json) setQuiet(true);
+  if (json) setJson(true);
   let success = true;
   let error: { message: string; code: ErrorCode } | null = null;
+  let summaryText = '';
+  let cooldown = false;
+
+  function emitJson() {
+    logJson({
+      command: 'validateEpic',
+      success,
+      edits: [],
+      errors: error ? [{ message: error.message, code: error.code }] : undefined,
+      cooldown,
+      cooldownReason: cooldown ? cooldownReason || undefined : undefined,
+      summary: summaryText,
+    });
+  }
 
   const cooldownReason = await getCooldownReason();
   await runtimeLog('validateEpic', { epicFilePath, options }, cooldownReason, null);
@@ -38,6 +57,7 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
   if (await isInCooldown()) {
     success = false;
     error = { message: 'Cooldown active', code: ErrorCodes.COOLDOWN_ACTIVE };
+    cooldown = true;
     if (!summary && !silent) {
       logCooldownWarning();
       if (cooldownReason) logInfo(`Reason: ${cooldownReason}`);
@@ -46,6 +66,7 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
       const reason = cooldownReason ? `Cooldown active: ${cooldownReason}` : 'Cooldown active';
       logSummary({ success, files: [], cooldown: reason });
     }
+    if (json) emitJson();
     return;
   }
 
@@ -61,12 +82,14 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
     await runtimeLog('validateEpic', { epicFilePath, options }, cooldownReason, error.message, error.code);
     success = false;
     if (summary) logSummary({ success, files: [], error: error.message });
+    if (json) emitJson();
     return;
   }
 
   let epic: any;
   try {
     epic = JSON.parse(raw);
+    summaryText = typeof epic.summary === 'string' ? epic.summary : '';
   } catch (err) {
     if (!summary) logError(`[${ErrorCodes.INVALID_EPIC}] Invalid JSON format`);
     error = { message: 'Invalid JSON format', code: ErrorCodes.INVALID_EPIC };
@@ -75,6 +98,7 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
     await runtimeLog('validateEpic', { epicFilePath, options }, cooldownReason, error.message, error.code);
     success = false;
     if (summary) logSummary({ success, files: [], error: error.message });
+    if (json) emitJson();
     return;
   }
 
@@ -86,6 +110,7 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
     process.exitCode = 1;
     success = false;
     if (summary) logSummary({ success, files: [], error: error.message });
+    if (json) emitJson();
     return;
   }
 
@@ -103,10 +128,12 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
       process.exitCode = 1;
       success = false;
       if (summary) logSummary({ success, files: [], error: error.message });
+      if (json) emitJson();
       return;
     }
     if (!summary && !silent) logInfo('Council approved this epic.');
   }
 
   if (summary) logSummary({ success: true, files: [] });
+  if (json) emitJson();
 }

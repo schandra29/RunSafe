@@ -131,4 +131,33 @@ describe('validateEpic', () => {
     expect(logSuccessFinal).not.toHaveBeenCalled();
     expect(logInfo).not.toHaveBeenCalled();
   });
+
+  it('JSON mode outputs structured success', async () => {
+    readFileMock.mockResolvedValueOnce(JSON.stringify(validEpic));
+    const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    await validateEpic('epic.json', { json: true });
+    const obj = JSON.parse(spy.mock.calls[0][0]);
+    expect(obj.command).toBe('validateEpic');
+    expect(obj.success).toBe(true);
+    spy.mockRestore();
+  });
+
+  it('JSON mode shows errors', async () => {
+    readFileMock.mockRejectedValueOnce(new Error('nope'));
+    const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    await validateEpic('missing.json', { json: true });
+    const obj = JSON.parse(spy.mock.calls[0][0]);
+    expect(obj.success).toBe(false);
+    expect(obj.errors[0].message).toBe('Epic file not found');
+    spy.mockRestore();
+  });
+
+  it('JSON mode indicates cooldown', async () => {
+    ((isInCooldown as any)).mockResolvedValueOnce(true);
+    const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    await validateEpic('epic.json', { json: true });
+    const obj = JSON.parse(spy.mock.calls[0][0]);
+    expect(obj.cooldown).toBe(true);
+    spy.mockRestore();
+  });
 });
