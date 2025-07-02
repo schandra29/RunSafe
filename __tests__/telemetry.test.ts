@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import path from 'path';
 import { promises as fs } from 'fs';
 import { logTelemetry } from '../src/utils/telemetry.js';
+import { getUadoDir } from '../src/utils/getUadoDir.js';
 
 jest.mock('chalk', () => ({
   __esModule: true,
@@ -33,7 +34,7 @@ test('logs a valid entry with command and timestamp', async () => {
   const entry = { command: 'apply', timestamp: 123, flags: ['--dry-run'] };
   await expect(logTelemetry(entry)).resolves.toBeUndefined();
 
-  const dir = path.join(process.cwd(), '.uado');
+  const dir = getUadoDir();
   const file = path.join(dir, 'telemetry.jsonl');
   expect(mkdirMock).toHaveBeenCalledWith(dir, { recursive: true });
   expect(appendFileMock).toHaveBeenCalledWith(file, JSON.stringify(entry) + '\n', 'utf8');
@@ -43,7 +44,7 @@ test('creates .uado directory and file if missing', async () => {
   const entry = { command: 'validate', timestamp: 456 };
   await logTelemetry(entry);
 
-  const dir = path.join(process.cwd(), '.uado');
+  const dir = getUadoDir();
   const file = path.join(dir, 'telemetry.jsonl');
   expect(mkdirMock).toHaveBeenCalledWith(dir, { recursive: true });
   expect(appendFileMock).toHaveBeenCalledWith(file, JSON.stringify(entry) + '\n', 'utf8');
@@ -55,7 +56,7 @@ test('appends multiple entries', async () => {
   await logTelemetry(e1);
   await logTelemetry(e2);
 
-  const dir = path.join(process.cwd(), '.uado');
+  const dir = getUadoDir();
   const file = path.join(dir, 'telemetry.jsonl');
   expect(appendFileMock).toHaveBeenCalledTimes(2);
   expect(appendFileMock).toHaveBeenNthCalledWith(1, file, JSON.stringify(e1) + '\n', 'utf8');

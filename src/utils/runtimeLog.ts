@@ -1,26 +1,27 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { getUadoDir } from './getUadoDir.js';
 
 export type CommandName = 'applyEpic' | 'validateEpic';
 
-export interface RuntimeLogEntry {
+export interface RuntimeLogEntry<T = unknown> {
   timestamp: string;
   commandName: CommandName;
-  args: any;
+  args: T;
   cooldownReason: string | null;
   error: string | null;
 }
 
-const DIR = path.join(process.cwd(), '.uado');
+const DIR = getUadoDir();
 const FILE = path.join(DIR, 'runtime.json');
 
-export async function runtimeLog(
+export async function runtimeLog<T = unknown>(
   commandName: CommandName,
-  args: any,
+  args: T,
   cooldownReason: string | null,
   error: string | null
 ): Promise<void> {
-  const entry: RuntimeLogEntry = {
+  const entry: RuntimeLogEntry<T> = {
     timestamp: new Date().toISOString(),
     commandName,
     args,
@@ -30,8 +31,11 @@ export async function runtimeLog(
   try {
     await fs.mkdir(DIR, { recursive: true });
     await fs.appendFile(FILE, JSON.stringify(entry) + '\n', 'utf8');
-  } catch {
-    // fail silently
+  } catch (err) {
+    if (process.env.NODE_ENV === 'debug') {
+      console.error(err);
+    }
+    // fail silently in production
   }
 }
 
