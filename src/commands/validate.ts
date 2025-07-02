@@ -75,7 +75,8 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
   try {
     raw = await fs.readFile(absPath, 'utf8');
   } catch (err) {
-    if (!summary) logError(`[${ErrorCodes.FILE_READ_FAIL}] Epic file not found`);
+    if (!summary) logError(`❌ [${ErrorCodes.FILE_READ_FAIL}] Epic file not found`);
+    if (!summary) logError('💡 Tip: Use --dry-run to preview changes without applying.');
     error = { message: 'Epic file not found', code: ErrorCodes.FILE_READ_FAIL };
     await recordFailure(error);
     process.exitCode = 1;
@@ -91,7 +92,8 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
     epic = JSON.parse(raw);
     summaryText = typeof epic.summary === 'string' ? epic.summary : '';
   } catch (err) {
-    if (!summary) logError(`[${ErrorCodes.INVALID_EPIC}] Invalid JSON format`);
+    if (!summary) logError(`❌ [${ErrorCodes.INVALID_EPIC}] Invalid JSON format`);
+    if (!summary) logError('💡 Tip: Use --dry-run to preview changes without applying.');
     error = { message: 'Invalid JSON format', code: ErrorCodes.INVALID_EPIC };
     await recordFailure(error);
     process.exitCode = 1;
@@ -104,7 +106,8 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
 
   const result = validateSchema(epic);
   if (!result.valid) {
-    if (!summary) logError(`[${ErrorCodes.INVALID_EPIC}] Epic schema validation failed`);
+    if (!summary) logError(`❌ [${ErrorCodes.INVALID_EPIC}] Epic schema validation failed`);
+    if (!summary) logError('💡 Tip: Use --dry-run to preview changes without applying.');
     error = { message: 'Epic schema validation failed', code: ErrorCodes.INVALID_EPIC };
     await recordFailure(error);
     process.exitCode = 1;
@@ -122,7 +125,7 @@ export async function validateEpic(epicFilePath: string, options: ValidateOption
   if (options.council) {
     const verdict = await multiAgentReview(epic);
     if (verdict === CouncilVerdict.REJECTED) {
-      if (!summary) logError(`[${ErrorCodes.VALIDATION_REJECTED}] Council rejected this epic.`);
+      if (!summary) logError(`❌ [${ErrorCodes.VALIDATION_REJECTED}] Council rejected this epic.`);
       error = { message: 'Council rejected this epic.', code: ErrorCodes.VALIDATION_REJECTED };
       await recordFailure(error);
       process.exitCode = 1;

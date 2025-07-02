@@ -132,8 +132,8 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     md = await fs.readFile(epicPath, 'utf8');
   } catch (err) {
     if (!summary) {
-      logError(`[${ErrorCodes.FILE_READ_FAIL}] ${(err as Error).message}`);
-      logError('Try running with --dry-run to debug');
+      logError(`❌ [${ErrorCodes.FILE_READ_FAIL}] ${(err as Error).message}`);
+      logError('❌ Try running with --dry-run to debug');
     }
     error = { message: (err as Error).message, code: ErrorCodes.FILE_READ_FAIL };
     await recordFailure(error);
@@ -152,7 +152,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
     const msg = process.env.NODE_ENV === 'debug' ? (err as Error).stack : (err as Error).message;
     if (!summary) {
       try {
-        logError(`[${ErrorCodes.INVALID_EPIC}] ${msg as string}`);
+        logError(`❌ [${ErrorCodes.INVALID_EPIC}] ${msg as string}`);
       } catch (logErr) {
         console.error(logErr);
       }
@@ -247,7 +247,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
         const code = (err as Error).message.startsWith('Unsupported edit type')
           ? ErrorCodes.UNSUPPORTED_EDIT
           : ErrorCodes.WRITE_FAIL;
-        logError(`[${code}] ${(err as Error).message}`);
+        logError(`❌ [${code}] ${(err as Error).message}`);
       } catch (logErr) {
         console.error(logErr);
       }
@@ -257,7 +257,7 @@ export async function applyEpic(file: string, options: ApplyOptions): Promise<vo
         await fs.writeFile(absPath, orig, 'utf8');
       }
       try {
-        if (!summary) logError('Rolled back changes due to failure');
+        if (!summary) logError('❌ Rolled back changes due to failure');
       } catch (logErr) {
         console.error(logErr);
       }

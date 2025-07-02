@@ -60,7 +60,8 @@ describe('validateEpic', () => {
     ((validateSchema as any)).mockReturnValueOnce({ valid: false, errors: ['bad'] });
     process.exitCode = 0;
     await validateEpic('epic.json', {});
-    expect(logError).toHaveBeenCalledWith(`[${ErrorCodes.INVALID_EPIC}] Epic schema validation failed`);
+    expect(logError).toHaveBeenCalledWith(`❌ [${ErrorCodes.INVALID_EPIC}] Epic schema validation failed`);
+    expect(logError).toHaveBeenCalledWith('💡 Tip: Use --dry-run to preview changes without applying.');
     expect(recordFailure).toHaveBeenCalledWith({
       message: 'Epic schema validation failed',
       code: ErrorCodes.INVALID_EPIC,
@@ -70,10 +71,15 @@ describe('validateEpic', () => {
 
   it('Cooldown active: should abort and print cooldown warning', async () => {
     ((isInCooldown as any)).mockResolvedValueOnce(true);
+    const real = jest.requireActual('../src/utils/logger.js');
+    (logCooldownWarning as jest.Mock).mockImplementation(real.logCooldownWarning);
+    const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
     await validateEpic('epic.json', {});
-    expect(logCooldownWarning).toHaveBeenCalled();
+    expect(spy.mock.calls[0][0]).toContain('🧊 Cooldown Active');
+    expect(spy.mock.calls[0][0]).toContain('safety cooldown');
     expect(logInfo).toHaveBeenCalledWith('Reason: Test');
     expect(readFileMock).not.toHaveBeenCalled();
+    spy.mockRestore();
   });
 
   it('With --council: should call multiAgentReview() and log council decision', async () => {
@@ -89,7 +95,7 @@ describe('validateEpic', () => {
     ((multiAgentReview as any)).mockResolvedValue(CouncilVerdict.REJECTED);
     process.exitCode = 0;
     await validateEpic('epic.json', { council: true });
-    expect(logError).toHaveBeenCalledWith(`[${ErrorCodes.VALIDATION_REJECTED}] Council rejected this epic.`);
+    expect(logError).toHaveBeenCalledWith(`❌ [${ErrorCodes.VALIDATION_REJECTED}] Council rejected this epic.`);
     expect(process.exitCode).toBe(1);
   });
 
@@ -104,13 +110,15 @@ describe('validateEpic', () => {
   it('Gracefully handles missing file or invalid JSON', async () => {
     readFileMock.mockRejectedValueOnce(new Error('nope'));
     await validateEpic('missing.json', {});
-    expect(logError).toHaveBeenCalledWith(`[${ErrorCodes.FILE_READ_FAIL}] Epic file not found`);
+    expect(logError).toHaveBeenCalledWith(`❌ [${ErrorCodes.FILE_READ_FAIL}] Epic file not found`);
+    expect(logError).toHaveBeenCalledWith('💡 Tip: Use --dry-run to preview changes without applying.');
 
     jest.resetAllMocks();
     ((isInCooldown as any)).mockResolvedValue(false);
     readFileMock.mockResolvedValueOnce('not json');
     await validateEpic('bad.json', {});
-    expect(logError).toHaveBeenCalledWith(`[${ErrorCodes.INVALID_EPIC}] Invalid JSON format`);
+    expect(logError).toHaveBeenCalledWith(`❌ [${ErrorCodes.INVALID_EPIC}] Invalid JSON format`);
+    expect(logError).toHaveBeenCalledWith('💡 Tip: Use --dry-run to preview changes without applying.');
   });
 
   it('Summary mode outputs json only', async () => {
@@ -127,7 +135,7 @@ describe('validateEpic', () => {
   it('Silent mode suppresses logs but shows errors', async () => {
     readFileMock.mockRejectedValueOnce(new Error('nope'));
     await validateEpic('missing.json', { silent: true });
-    expect(logError).toHaveBeenCalledWith(`[${ErrorCodes.FILE_READ_FAIL}] Epic file not found`);
+    expect(logError).toHaveBeenCalledWith(`❌ [${ErrorCodes.FILE_READ_FAIL}] Epic file not found`);
     expect(logSuccessFinal).not.toHaveBeenCalled();
     expect(logInfo).not.toHaveBeenCalled();
   });
